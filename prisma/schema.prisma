@@ -1,0 +1,291 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  USER
+  ADMIN
+  SHOP_OWNER
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum OtpPurpose {
+  LOGIN
+  REGISTER
+  PASSWORD_RESET
+  EMAIL_VERIFY
+  PHONE_VERIFY
+  VENDOR_APPROVAL
+}
+
+enum PaymentMethod {
+  COD
+  BKASH
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+model User {
+  id              String            @id @default(cuid())
+  name            String
+  email           String            @unique
+  password        String
+  phone           String
+  secondPhone     String?
+  address         String?
+  role            Role              @default(USER)
+  emailVerified   Boolean           @default(false)
+  shippingAddress ShippingAddress[]
+  shops           Shop[]
+  orders          Order[]
+  oTPs            oTP[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([email])
+  @@index([role])
+}
+
+model ShippingAddress {
+  id        String  @id @default(cuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  phone     String
+  district  String
+  address   String
+  isDefault Boolean @default(true)
+  orders    Order[]
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Shop {
+  id            String  @id @default(cuid())
+  name          String
+  phone         String
+  email         String
+  imageUrl      String?
+  address       String?
+  emailVerified Boolean @default(false)
+  ownerId       String
+  owner         User    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  products Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+  @@index([email])
+}
+
+model Banner {
+  id       String  @id @default(cuid())
+  title    String
+  imageUrl String
+  slug     String?
+  order    Int     @default(1)
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+}
+
+model Category {
+  id       String  @id @default(cuid())
+  name     String
+  iconUrl  String?
+  imageUrl String?
+
+  subCategories SubCategory[]
+  products      Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SubCategory {
+  id       String  @id @default(cuid())
+  name     String
+  iconUrl  String?
+  imageUrl String?
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  products Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([categoryId])
+}
+
+model Size {
+  id         String      @id @default(cuid())
+  name       String      @unique
+  products   Product[]
+  orderItems OrderItem[] // ✅ new back-relation
+
+  createdAt DateTime @default(now())
+}
+
+model Product {
+  id            String  @id @default(cuid())
+  name          String
+  description   String  @db.Text
+  price         Float   @default(0)
+  discountPrice Float?  @default(0)
+  stock         Int     @default(0)
+  sold          Int     @default(0)
+  keywords      String?
+  slug          String?
+  isActive      Boolean @default(true)
+  isFeatured    Boolean @default(false)
+  rating        Int     @default(4)
+
+  imageUrls String[] // ✅ multiple images
+
+  sizes Size[] // ✅ from Size table (implicit M2M)
+
+  shopId String
+  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  subCategoryId String?
+  subCategory   SubCategory? @relation(fields: [subCategoryId], references: [id], onDelete: SetNull)
+
+  offers     Offer[]
+  orderItems OrderItem[]
+
+  shopPrice     Int @default(0)
+  shopSellPrice Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slug])
+  @@index([shopId])
+  @@index([categoryId])
+  @@index([isActive])
+}
+
+model Order {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  status      OrderStatus @default(PENDING)
+  totalAmount Float
+
+  shippingAddressId String
+  shippingAddress   ShippingAddress @relation(fields: [shippingAddressId], references: [id], onDelete: Restrict)
+  deliveryCharge    Float           @default(0.00)
+  items             OrderItem[]
+  payment           Payment?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id String @id @default(cuid())
+
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  // snapshot data
+  imageUrl String
+  sizeId   String? // optional foreign key
+  size     Size?   @relation(fields: [sizeId], references: [id])
+
+  price         Float
+  discountPrice Float?
+  quantity      Int
+
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model Payment {
+  id String @id @default(cuid())
+
+  orderId String @unique
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  method PaymentMethod
+  status PaymentStatus @default(PENDING)
+
+  txId   String? @unique
+  amount Float
+
+  bkashNumber String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([txId])
+}
+
+model Offer {
+  id         String   @id @default(cuid())
+  couponCode String   @unique
+  discount   Float // Consider adding min/max order value
+  isActive   Boolean  @default(true)
+  expireAt   DateTime
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  usageCount Int  @default(0)
+  maxUsage   Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([couponCode])
+  @@index([productId])
+  @@index([isActive, expireAt])
+}
+
+model oTP {
+  id        String     @id @default(cuid())
+  code      String
+  userId    String?
+  user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verified  Boolean    @default(false)
+  purpose   OtpPurpose
+  expiresAt DateTime
+  createdAt DateTime   @default(now())
+}
