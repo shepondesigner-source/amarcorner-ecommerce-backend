@@ -5,7 +5,10 @@ CREATE TYPE "Role" AS ENUM ('USER', 'ADMIN', 'SHOP_OWNER');
 CREATE TYPE "OrderStatus" AS ENUM ('PENDING', 'CONFIRMED', 'SHIPPED', 'DELIVERED', 'CANCELLED');
 
 -- CreateEnum
-CREATE TYPE "PaymentMethod" AS ENUM ('CASH_ON_DELIVERY', 'BKASH');
+CREATE TYPE "OtpPurpose" AS ENUM ('LOGIN', 'REGISTER', 'PASSWORD_RESET', 'EMAIL_VERIFY', 'PHONE_VERIFY', 'VENDOR_APPROVAL');
+
+-- CreateEnum
+CREATE TYPE "PaymentMethod" AS ENUM ('COD', 'BKASH');
 
 -- CreateEnum
 CREATE TYPE "PaymentStatus" AS ENUM ('PENDING', 'SUCCESS', 'FAILED');
@@ -28,6 +31,20 @@ CREATE TABLE "User" (
 );
 
 -- CreateTable
+CREATE TABLE "ShippingAddress" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "phone" TEXT NOT NULL,
+    "district" TEXT NOT NULL,
+    "address" TEXT NOT NULL,
+    "isDefault" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ShippingAddress_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "Shop" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -46,6 +63,7 @@ CREATE TABLE "Shop" (
 -- CreateTable
 CREATE TABLE "Banner" (
     "id" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
     "imageUrl" TEXT NOT NULL,
     "slug" TEXT,
     "order" INTEGER NOT NULL DEFAULT 1,
@@ -94,41 +112,25 @@ CREATE TABLE "Product" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT NOT NULL,
+    "price" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "discountPrice" DOUBLE PRECISION DEFAULT 0,
+    "stock" INTEGER NOT NULL DEFAULT 0,
+    "sold" INTEGER NOT NULL DEFAULT 0,
     "keywords" TEXT,
-    "slug" TEXT NOT NULL,
+    "slug" TEXT,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "isFeatured" BOOLEAN NOT NULL DEFAULT false,
+    "rating" INTEGER NOT NULL DEFAULT 4,
+    "imageUrls" TEXT[],
     "shopId" TEXT NOT NULL,
     "categoryId" TEXT NOT NULL,
     "subCategoryId" TEXT,
+    "shopPrice" INTEGER NOT NULL DEFAULT 0,
+    "shopSellPrice" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Product_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "ProductAttribute" (
-    "id" TEXT NOT NULL,
-    "name" TEXT,
-    "imageUrl" TEXT NOT NULL,
-    "productId" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "ProductAttribute_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "ProductSize" (
-    "id" TEXT NOT NULL,
-    "title" TEXT NOT NULL,
-    "price" DOUBLE PRECISION NOT NULL,
-    "discountPrice" DOUBLE PRECISION,
-    "stock" INTEGER NOT NULL DEFAULT 0,
-    "sold" INTEGER NOT NULL DEFAULT 0,
-    "sizeId" TEXT NOT NULL,
-    "attributeId" TEXT NOT NULL,
-
-    CONSTRAINT "ProductSize_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -137,9 +139,8 @@ CREATE TABLE "Order" (
     "userId" TEXT NOT NULL,
     "status" "OrderStatus" NOT NULL DEFAULT 'PENDING',
     "totalAmount" DOUBLE PRECISION NOT NULL,
-    "shippingAddress" TEXT,
-    "shippingPhone" TEXT,
-    "customerName" TEXT,
+    "shippingAddressId" TEXT NOT NULL,
+    "deliveryCharge" DOUBLE PRECISION NOT NULL DEFAULT 0.00,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -151,12 +152,11 @@ CREATE TABLE "OrderItem" (
     "id" TEXT NOT NULL,
     "orderId" TEXT NOT NULL,
     "productId" TEXT NOT NULL,
-    "productAttributeId" TEXT NOT NULL,
-    "productSizeId" TEXT NOT NULL,
-    "quantity" INTEGER NOT NULL,
-    "unitPrice" DOUBLE PRECISION NOT NULL,
+    "imageUrl" TEXT NOT NULL,
+    "sizeId" TEXT,
+    "price" DOUBLE PRECISION NOT NULL,
     "discountPrice" DOUBLE PRECISION,
-    "totalPrice" DOUBLE PRECISION NOT NULL,
+    "quantity" INTEGER NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "OrderItem_pkey" PRIMARY KEY ("id")
@@ -170,6 +170,7 @@ CREATE TABLE "Payment" (
     "status" "PaymentStatus" NOT NULL DEFAULT 'PENDING',
     "txId" TEXT,
     "amount" DOUBLE PRECISION NOT NULL,
+    "bkashNumber" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -192,6 +193,27 @@ CREATE TABLE "Offer" (
     CONSTRAINT "Offer_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "oTP" (
+    "id" TEXT NOT NULL,
+    "code" TEXT NOT NULL,
+    "userId" TEXT,
+    "verified" BOOLEAN NOT NULL DEFAULT false,
+    "purpose" "OtpPurpose" NOT NULL,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "oTP_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "_ProductToSize" (
+    "A" TEXT NOT NULL,
+    "B" TEXT NOT NULL,
+
+    CONSTRAINT "_ProductToSize_AB_pkey" PRIMARY KEY ("A","B")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
@@ -200,6 +222,9 @@ CREATE INDEX "User_email_idx" ON "User"("email");
 
 -- CreateIndex
 CREATE INDEX "User_role_idx" ON "User"("role");
+
+-- CreateIndex
+CREATE INDEX "ShippingAddress_userId_idx" ON "ShippingAddress"("userId");
 
 -- CreateIndex
 CREATE INDEX "Shop_ownerId_idx" ON "Shop"("ownerId");
@@ -214,9 +239,6 @@ CREATE INDEX "SubCategory_categoryId_idx" ON "SubCategory"("categoryId");
 CREATE UNIQUE INDEX "Size_name_key" ON "Size"("name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Product_slug_key" ON "Product"("slug");
-
--- CreateIndex
 CREATE INDEX "Product_slug_idx" ON "Product"("slug");
 
 -- CreateIndex
@@ -226,25 +248,7 @@ CREATE INDEX "Product_shopId_idx" ON "Product"("shopId");
 CREATE INDEX "Product_categoryId_idx" ON "Product"("categoryId");
 
 -- CreateIndex
-CREATE INDEX "Product_subCategoryId_idx" ON "Product"("subCategoryId");
-
--- CreateIndex
 CREATE INDEX "Product_isActive_idx" ON "Product"("isActive");
-
--- CreateIndex
-CREATE INDEX "Product_createdAt_idx" ON "Product"("createdAt");
-
--- CreateIndex
-CREATE INDEX "ProductAttribute_productId_idx" ON "ProductAttribute"("productId");
-
--- CreateIndex
-CREATE INDEX "ProductSize_attributeId_idx" ON "ProductSize"("attributeId");
-
--- CreateIndex
-CREATE INDEX "ProductSize_sizeId_idx" ON "ProductSize"("sizeId");
-
--- CreateIndex
-CREATE INDEX "ProductSize_stock_idx" ON "ProductSize"("stock");
 
 -- CreateIndex
 CREATE INDEX "Order_userId_idx" ON "Order"("userId");
@@ -285,6 +289,12 @@ CREATE INDEX "Offer_productId_idx" ON "Offer"("productId");
 -- CreateIndex
 CREATE INDEX "Offer_isActive_expireAt_idx" ON "Offer"("isActive", "expireAt");
 
+-- CreateIndex
+CREATE INDEX "_ProductToSize_B_index" ON "_ProductToSize"("B");
+
+-- AddForeignKey
+ALTER TABLE "ShippingAddress" ADD CONSTRAINT "ShippingAddress_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
 -- AddForeignKey
 ALTER TABLE "Shop" ADD CONSTRAINT "Shop_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -301,16 +311,10 @@ ALTER TABLE "Product" ADD CONSTRAINT "Product_categoryId_fkey" FOREIGN KEY ("cat
 ALTER TABLE "Product" ADD CONSTRAINT "Product_subCategoryId_fkey" FOREIGN KEY ("subCategoryId") REFERENCES "SubCategory"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "ProductAttribute" ADD CONSTRAINT "ProductAttribute_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "ProductSize" ADD CONSTRAINT "ProductSize_sizeId_fkey" FOREIGN KEY ("sizeId") REFERENCES "Size"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "ProductSize" ADD CONSTRAINT "ProductSize_attributeId_fkey" FOREIGN KEY ("attributeId") REFERENCES "ProductAttribute"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "Order" ADD CONSTRAINT "Order_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Order" ADD CONSTRAINT "Order_shippingAddressId_fkey" FOREIGN KEY ("shippingAddressId") REFERENCES "ShippingAddress"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "OrderItem" ADD CONSTRAINT "OrderItem_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -319,13 +323,19 @@ ALTER TABLE "OrderItem" ADD CONSTRAINT "OrderItem_orderId_fkey" FOREIGN KEY ("or
 ALTER TABLE "OrderItem" ADD CONSTRAINT "OrderItem_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "OrderItem" ADD CONSTRAINT "OrderItem_productAttributeId_fkey" FOREIGN KEY ("productAttributeId") REFERENCES "ProductAttribute"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "OrderItem" ADD CONSTRAINT "OrderItem_productSizeId_fkey" FOREIGN KEY ("productSizeId") REFERENCES "ProductSize"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "OrderItem" ADD CONSTRAINT "OrderItem_sizeId_fkey" FOREIGN KEY ("sizeId") REFERENCES "Size"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Payment" ADD CONSTRAINT "Payment_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Offer" ADD CONSTRAINT "Offer_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "oTP" ADD CONSTRAINT "oTP_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_ProductToSize" ADD CONSTRAINT "_ProductToSize_A_fkey" FOREIGN KEY ("A") REFERENCES "Product"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_ProductToSize" ADD CONSTRAINT "_ProductToSize_B_fkey" FOREIGN KEY ("B") REFERENCES "Size"("id") ON DELETE CASCADE ON UPDATE CASCADE;
