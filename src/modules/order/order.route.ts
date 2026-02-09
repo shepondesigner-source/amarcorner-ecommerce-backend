@@ -7,6 +7,7 @@ import { validate } from "../../core/validation/validate";
 import {
   createOrderController,
   getOrderListController,
+  updateOrderController,
 } from "./order.controller";
 
 const router = Router();
@@ -19,8 +20,8 @@ router.use(authenticate);
 router.post(
   "/",
   authenticate,
-  validate(createOrderSchema),
-  asyncHandler(createOrderController),
+  // validate(createOrderSchema),
+  asyncHandler(createOrderController)
 );
 
 router.get("/", authenticate, asyncHandler(getOrderListController));
@@ -28,7 +29,7 @@ router.put(
   "/:id",
   authenticate,
   validate(updateOrderSchema),
-  asyncHandler(getOrderListController),
+  asyncHandler(updateOrderController)
 );
 
 export default router;

@@ -1,6 +1,7 @@
 import { PaymentRepository } from "./payment.repository";
 import { prisma } from "../../config/prisma";
 import { NotFoundError, ForbiddenError } from "../../core/errors/HttpError";
+import { Role } from "../../../generated/prisma";
 
 export const PaymentService = {
   createUserPayment: async (
@@ -35,8 +36,39 @@ export const PaymentService = {
     return payment;
   },
 
-  getAllPayments: async () => {
-    return PaymentRepository.findAll();
+  getAllPayments: async (user: { id: string; role: Role }) => {
+    // ✅ ADMIN → all payments
+    if (user.role === Role.ADMIN) {
+      return PaymentRepository.findAll({});
+    }
+
+    // ✅ USER → only own payments
+    if (user.role === Role.USER) {
+      return PaymentRepository.findAll({
+        order: {
+          userId: user.id,
+        },
+      });
+    }
+
+    // ✅ SHOP_OWNER → payments for own shop products
+    if (user.role === Role.SHOP_OWNER) {
+      return PaymentRepository.findAll({
+        order: {
+          items: {
+            some: {
+              product: {
+                shop: {
+                  ownerId: user.id,
+                },
+              },
+            },
+          },
+        },
+      });
+    }
+
+    throw new ForbiddenError("Access denied");
   },
 
   getPaymentById: async (id: string, user?: any) => {

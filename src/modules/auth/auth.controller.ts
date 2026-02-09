@@ -21,3 +21,9 @@ export const refreshToken = asyncHandler(
     res.json(result);
   }
 );
+
+export const updatePassword = asyncHandler(async (req: Request, res: Response) => {
+  const {password} = req.body
+  const result = await authService.updatePassword(req.user?.id!,password);
+  res.json(result);
+});

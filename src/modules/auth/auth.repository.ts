@@ -1,5 +1,6 @@
 import { User } from "../../../generated/prisma";
 import { prisma } from "../../config/prisma";
+import { updateById } from "../category/category.repository";
 
 export class AuthRepository {
   async createUser(data: Partial<User>): Promise<User> {
@@ -12,6 +13,14 @@ export class AuthRepository {
         role: data.role!,
       },
     });
+    return user;
+  }
+  async updatePassword(id: string, password: string) {
+    const user = await prisma.user.update({
+      where: { id },
+      data: { password }, // make sure to hash it before saving!
+    });
+
     return user;
   }
 

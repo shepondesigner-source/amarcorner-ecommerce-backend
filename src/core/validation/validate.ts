@@ -1,4 +1,4 @@
-import {  RequestHandler } from "express";
+import { RequestHandler } from "express";
 import { ZodObject, ZodTypeAny } from "zod";
 import { BadRequestError } from "../errors/HttpError";
 
@@ -11,13 +11,13 @@ export const validate =
         params: req.params,
         query: req.query,
       });
-
+      console.log(parsed);
       req.body = parsed.body ?? req.body;
       next();
     } catch (error: any) {
       console.log(error);
       next(
-        new BadRequestError(error.errors?.[0]?.message || "Validation failed"),
+        new BadRequestError(error.errors?.[0]?.message || "Validation failed")
       );
     }
   };

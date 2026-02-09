@@ -12,6 +12,8 @@ export const createProductSchema = z.object({
 
     description: z.string().min(2),
     price: z.coerce.number().positive(),
+    shopPrice: z.coerce.number().positive(),
+    shopSellPrice: z.coerce.number().positive(),
     stock: z.coerce.number().int().nonnegative().optional(),
     keywords: z.string().optional(),
     categoryId: id,

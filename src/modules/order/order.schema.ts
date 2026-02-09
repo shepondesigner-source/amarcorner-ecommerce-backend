@@ -30,7 +30,7 @@ export const getOrderListSchema = z.object({
 });
 export const updateOrderSchema = z.object({
   params: z.object({
-    id: z.string().cuid(), // Order ID from URL
+    id: z.cuid(), // Order ID from URL
   }),
   body: z.object({
     status: z.enum(OrderStatus).optional(),

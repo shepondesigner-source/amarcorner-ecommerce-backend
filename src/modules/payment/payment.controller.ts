@@ -13,10 +13,14 @@ export const PaymentController = {
       next(err);
     }
   },
-
-  getAll: async (_req: Request, res: Response, next: NextFunction) => {
+  getAll: async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const payments = await PaymentService.getAllPayments();
+      if (!req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const payments = await PaymentService.getAllPayments(req.user);
+
       res.json({ success: true, data: payments });
     } catch (err) {
       next(err);

@@ -7,9 +7,24 @@ export const PaymentRepository = {
       include: { order: true },
     }),
 
-  findAll: () =>
+  findAll: (where: any) =>
     prisma.payment.findMany({
-      include: { order: true },
+      where,
+      include: {
+        order: {
+          include: {
+            items: {
+              include: {
+                product: {
+                  include: {
+                    shop: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
       orderBy: { createdAt: "desc" },
     }),
 

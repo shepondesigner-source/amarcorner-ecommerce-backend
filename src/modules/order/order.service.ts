@@ -2,6 +2,8 @@ import { Role } from "../../../generated/prisma";
 import { prisma } from "../../config/prisma";
 import { AppError } from "../../core/errors/AppError";
 import { ApiResponse } from "../../core/response/ApiResponse";
+import { invoiceTemplate } from "../../core/templates/invoice.template";
+import { MailService } from "../common/service";
 
 type CreateOrderInput = {
   deliveryCharge: number;
@@ -97,7 +99,7 @@ export const createOrderService = async (
       data: {
         orderId: order.id,
         method: data.payment.method,
-        txId: data.payment.txId,
+        txId: data.payment.txId?.trim() || null, // ✅ store null instead of ""
         amount: data.payment.amount || 0,
         bkashNumber: data.payment.bkashNumber,
       },
@@ -105,6 +107,29 @@ export const createOrderService = async (
 
     return order;
   });
+
+  try {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (user?.email) {
+      await MailService.send({
+        to: user.email,
+        subject: `Your Order #${order.id} Invoice`,
+        html: invoiceTemplate({
+          orderId: order.id,
+          items: order.items.map((i) => ({
+            name: products.find((p) => p.id === i.productId)!.name,
+            quantity: i.quantity,
+            price: i.price,
+            discountPrice: i.discountPrice,
+          })),
+          total: totalAmount,
+          deliveryCharge: data.deliveryCharge,
+        }),
+      });
+    }
+  } catch (err) {
+    console.error("Failed to send order email:", err);
+  }
 
   return order;
 };

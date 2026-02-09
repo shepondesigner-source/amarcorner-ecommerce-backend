@@ -1,5 +1,5 @@
 import { ErrorRequestHandler } from "express";
-import { HttpError } from "../errors/HttpError";
+import { HttpError } from "./HttpError";
 import { ZodError } from "zod";
 import { Prisma } from "../../../generated/prisma";
 

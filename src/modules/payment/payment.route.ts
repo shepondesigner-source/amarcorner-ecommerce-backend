@@ -16,13 +16,20 @@ router.post(
   validate(createPaymentSchema),
   asyncHandler(PaymentController.create)
 );
-router.get("/:id", asyncHandler(PaymentController.getOne));
-router.get("/", authorize("ADMIN"), asyncHandler(PaymentController.getAll));
+router.get(
+  "/",
+  authenticate,
+  authorize("ADMIN", "USER", "SHOP_OWNER"),
+  asyncHandler(PaymentController.getAll)
+);
+
 router.put(
-  "/:id/status",
+  "/:id",
+  authenticate,
   authorize("ADMIN"),
   validate(updatePaymentSchema),
   asyncHandler(PaymentController.updateStatus)
 );
+router.get("/:id", asyncHandler(PaymentController.getOne));
 
 export default router;

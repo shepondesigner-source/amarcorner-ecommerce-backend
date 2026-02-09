@@ -19,8 +19,7 @@ export class AuthService {
     email: string;
     password: string;
     phone?: string;
-    role:Role;
-    
+    role: Role;
   }) {
     const existing = await this.repo.findUserByEmail(data.email);
     if (existing) throw new BadRequestError("Email already exists");
@@ -70,5 +69,17 @@ export class AuthService {
     } catch {
       throw new UnauthorizedError("Invalid refresh token");
     }
+  }
+
+  async updatePassword(
+    id: string,
+
+    password: string
+  ) {
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await this.repo.updatePassword(id, hashedPassword);
+
+    return user;
   }
 }
