@@ -1,7 +1,7 @@
 // otp.repository.ts
 
+import { OtpPurpose } from "../../../generated/prisma";
 import { prisma } from "../../config/prisma";
-
 
 export class OtpRepository {
   create(data: {
@@ -11,6 +11,14 @@ export class OtpRepository {
     userId?: string;
   }) {
     return prisma.oTP.create({ data });
+  }
+  async deleteMany(params: { userId: string; purpose: OtpPurpose }) {
+    return prisma.oTP.deleteMany({
+      where: {
+        userId: params.userId,
+        purpose: params.purpose,
+      },
+    });
   }
 
   findValidOtp(userId: string | undefined, purpose: any) {

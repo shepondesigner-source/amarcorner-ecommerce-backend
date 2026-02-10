@@ -14,9 +14,12 @@ import paymentRoutes from "./modules/payment/payment.route";
 import sizeRoutes from "./modules/size/size.route";
 import dashboardRoutes from "./modules/dashboard/dashboard.routes";
 
+import otpRoutes from "./modules/otp/otp.routes";
+
 const router = Router();
 
 router.use("/auth", authRoutes);
+router.use("/otp", otpRoutes);
 
 // Category routes
 router.use("/categories", categoryRoutes);
@@ -43,7 +46,7 @@ router.use("/shops", shopRoutes);
 router.use("/users", userRoutes);
 
 //ShippingAddress routes
-router.use("/address", addressRoutes   );
+router.use("/address", addressRoutes);
 
 // payment routes
 router.use("/payments", paymentRoutes);

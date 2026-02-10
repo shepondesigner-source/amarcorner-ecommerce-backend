@@ -6,21 +6,20 @@ const otpService = new OtpService();
 
 export class OtpController {
   static async generate(req: Request, res: Response) {
-    const { userId, purpose } = req.body;
+    const { email, purpose } = req.body;
 
-    const otp = await otpService.generateOtp(userId, purpose);
+    const otp = await otpService.generateOtp(email, purpose);
 
     res.status(201).json({
       message: "OTP generated",
       // ⚠️ remove otp in production
-      otp,
     });
   }
 
   static async verify(req: Request, res: Response) {
-    const { userId, purpose, code } = req.body;
+    const { email, purpose, code } = req.body;
 
-    await otpService.verifyOtp(userId, purpose, code);
+    await otpService.verifyOtp(email, purpose, code);
 
     res.json({ message: "OTP verified successfully" });
   }

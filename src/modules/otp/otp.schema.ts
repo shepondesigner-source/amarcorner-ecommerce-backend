@@ -4,15 +4,14 @@ import { OtpPurpose } from "./otp.type";
 
 export const createOtpSchema = z.object({
   body: z.object({
-    userId: z.uuid().optional(),
-    code: z.string().length(6),
+    email: z.email(),
     purpose: z.enum(OtpPurpose),
   }),
 });
 
 export const verifyOtpSchema = z.object({
   body: z.object({
-    userId: z.uuid().optional(),
+    email: z.email(),
     code: z.string().length(6),
     purpose: z.enum(OtpPurpose),
   }),

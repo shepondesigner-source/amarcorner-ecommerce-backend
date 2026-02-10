@@ -10,5 +10,6 @@ router.post("/register", validate(registerSchema), controller.register);
 router.post("/login", validate(loginSchema), controller.login);
 router.post("/refresh", validate(refreshTokenSchema), controller.refreshToken);
 router.post("/password-change", authenticate, controller.updatePassword);
+router.post("/forget",  controller.forgotPassword);
 
 export default router;

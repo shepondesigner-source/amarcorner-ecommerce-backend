@@ -10,6 +10,6 @@ export enum OtpPurpose {
 }
 
 export interface CreateOtpInput {
-  userId?: string;
+  email: string;
   purpose: OtpPurpose;
 }

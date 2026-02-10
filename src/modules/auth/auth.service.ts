@@ -1,4 +1,5 @@
 import { Role } from "../../../generated/prisma";
+import { prisma } from "../../config/prisma";
 import {
   BadRequestError,
   UnauthorizedError,
@@ -93,5 +94,47 @@ export class AuthService {
     const user = await this.repo.updatePassword(id, hashedPassword);
 
     return user;
+  }
+
+  async forgetPassword(email: string, otp: string, password: string) {
+    // 1️⃣ Find user
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) throw new BadRequestError("User not found");
+
+    // 2️⃣ Find latest OTP for password reset
+    const otpRecord = await prisma.oTP.findFirst({
+      where: {
+        userId: user.id,
+        purpose: "PASSWORD_RESET", // your OtpPurpose enum
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (!otpRecord) throw new BadRequestError("OTP not found");
+
+    // 3️⃣ Check expiry
+    if (otpRecord.expiresAt < new Date()) {
+      throw new BadRequestError("OTP expired");
+    }
+
+    // 4️⃣ Compare OTP
+    const isOtpValid = await bcrypt.compare(otp, otpRecord.code);
+    if (!isOtpValid) {
+      throw new BadRequestError("Invalid OTP");
+    }
+
+    // 5️⃣ Hash new password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // 6️⃣ Update user password
+    const updatedUser = await prisma.user.update({
+      where: { id: user.id },
+      data: { password: hashedPassword },
+    });
+
+    // 7️⃣ Mark OTP as used (optional: delete instead)
+    await prisma.oTP.delete({ where: { id: otpRecord.id } });
+
+    return updatedUser;
   }
 }
