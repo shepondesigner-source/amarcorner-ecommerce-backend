@@ -3,11 +3,13 @@ import {
   BadRequestError,
   UnauthorizedError,
 } from "../../core/errors/HttpError";
+import { welcomeTemplate } from "../../core/templates/welocome.template";
 import {
   signAccessToken,
   signRefreshToken,
   verifyRefreshToken,
 } from "../../core/utils/jwt";
+import { MailService } from "../common/service";
 import { AuthRepository } from "./auth.repository";
 import bcrypt from "bcryptjs";
 
@@ -32,7 +34,17 @@ export class AuthService {
 
     const accessToken = signAccessToken({ id: user.id, role: user.role });
     const refreshToken = signRefreshToken({ id: user.id, role: user.role });
-
+    try {
+      if (user?.email) {
+        await MailService.send({
+          to: user.email,
+          subject: `Welcome`,
+          html: welcomeTemplate({ name: user.name, storeName: "Amarcorner" }),
+        });
+      }
+    } catch (err) {
+      console.error("Failed to send order email:", err);
+    }
     return { accessToken, refreshToken };
   }
 
@@ -74,7 +86,7 @@ export class AuthService {
   async updatePassword(
     id: string,
 
-    password: string
+    password: string,
   ) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
