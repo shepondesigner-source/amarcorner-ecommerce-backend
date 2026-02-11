@@ -39,7 +39,7 @@ router.post(
 
 router.post(
   "/vendor",
-  upload.array("images", 5),
+  upload.array("images", 15),
   validate(createVendorProductSchema),
   asyncHandler(createVendorProduct),
 );
@@ -57,7 +57,11 @@ router.get(
   authorize("USER"),
   asyncHandler(getdProductDeliveryCharge),
 );
-router.post("/discount-prices", authenticate, asyncHandler(getDiscountPricesByIds));
+router.post(
+  "/discount-prices",
+  authenticate,
+  asyncHandler(getDiscountPricesByIds),
+);
 
 router.get("/:id", asyncHandler(productById));
 
