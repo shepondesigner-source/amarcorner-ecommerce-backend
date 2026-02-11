@@ -32,7 +32,7 @@ const upload = multer();
 
 router.post(
   "/",
-  upload.array("images", 5),
+  upload.array("images", 15),
   validate(createProductSchema),
   asyncHandler(createProduct),
 );
@@ -67,7 +67,7 @@ router.get("/:id", asyncHandler(productById));
 
 router.put(
   "/:id",
-  upload.array("images", 5),
+  upload.array("images", 15),
   authenticate,
   validate(updateProductSchema),
   asyncHandler(updateProduct),
