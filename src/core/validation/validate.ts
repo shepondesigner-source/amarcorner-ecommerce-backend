@@ -11,11 +11,11 @@ export const validate =
         params: req.params,
         query: req.query,
       });
-      console.log(parsed);
+      // console.log(parsed);
       req.body = parsed.body ?? req.body;
       next();
     } catch (error: any) {
-      console.log(error);
+      // console.log(error);
       next(
         new BadRequestError(error.errors?.[0]?.message || "Validation failed")
       );

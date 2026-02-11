@@ -17,7 +17,9 @@ export const createProductSchema = z.object({
     stock: z.coerce.number().int().nonnegative().optional(),
     keywords: z.string().optional(),
     categoryId: id,
+    isFeatured: z.coerce.boolean().optional(),
 
+    isActive: z.coerce.boolean().optional(),
     shopId: id,
     subCategoryId: id.optional(),
     discountPrice: z.coerce.number().positive().optional(),
@@ -60,6 +62,8 @@ export const updateProductSchema = z.object({
     keywords: z.string().optional(),
     slug: z.string().optional(),
     isActive: z.coerce.boolean().optional(),
+    isFeatured: z.coerce.boolean().optional(),
+
     existingImageUrls: z
       .string()
       .optional()

@@ -34,14 +34,14 @@ router.post(
   "/",
   upload.array("images", 5),
   validate(createProductSchema),
-  asyncHandler(createProduct)
+  asyncHandler(createProduct),
 );
 
 router.post(
   "/vendor",
   upload.array("images", 5),
   validate(createVendorProductSchema),
-  asyncHandler(createVendorProduct)
+  asyncHandler(createVendorProduct),
 );
 router.get("/", asyncHandler(getProducts));
 router.get("/admin", authenticate, asyncHandler(getProducts));
@@ -55,23 +55,26 @@ router.get(
   "/rate",
   authenticate,
   authorize("USER"),
-  asyncHandler(getdProductDeliveryCharge)
+  asyncHandler(getdProductDeliveryCharge),
 );
-router.post("/discount-prices", asyncHandler(getDiscountPricesByIds));
+router.post("/discount-prices", authenticate, asyncHandler(getDiscountPricesByIds));
 
 router.get("/:id", asyncHandler(productById));
 
 router.put(
   "/:id",
   upload.array("images", 5),
+  authenticate,
   validate(updateProductSchema),
-  asyncHandler(updateProduct)
+  asyncHandler(updateProduct),
 );
 
 router.delete(
   "/:id",
+  authenticate,
+  authorize("ADMIN"),
   validate(deleteProductSchema),
-  asyncHandler(deleteProduct)
+  asyncHandler(deleteProduct),
 );
 
 export default router;

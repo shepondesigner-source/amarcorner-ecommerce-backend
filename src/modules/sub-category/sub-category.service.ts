@@ -20,7 +20,7 @@ export const createCategory = async (
   const imageUrl = imageFile
     ? await uploadToCloudinary(imageFile.buffer, "subcategories/images")
     : "";
-  console.log(data);
+  // console.log(data);
   return repo.create({
     ...data,
 
@@ -48,7 +48,7 @@ export const updateCategory = async (
     await deleteFromCloudinaryByUrl(category.iconUrl);
     data.iconUrl = await uploadToCloudinary(
       iconFile.buffer,
-      "categories/icons"
+      "categories/icons",
     );
   }
 
@@ -56,7 +56,7 @@ export const updateCategory = async (
     await deleteFromCloudinaryByUrl(category.imageUrl);
     data.imageUrl = await uploadToCloudinary(
       imageFile.buffer,
-      "categories/images"
+      "categories/images",
     );
   }
 
