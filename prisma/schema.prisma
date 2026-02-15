@@ -55,6 +55,7 @@ model User {
   shops           Shop[]
   orders          Order[]
   oTPs            oTP[]
+  review          Review[]
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
@@ -177,6 +178,7 @@ model Product {
 
   offers     Offer[]
   orderItems OrderItem[]
+  review     Review[]
 
   shopPrice     Int @default(0)
   shopSellPrice Int @default(0)
@@ -288,4 +290,13 @@ model oTP {
   purpose   OtpPurpose
   expiresAt DateTime
   createdAt DateTime   @default(now())
+}
+
+model Review {
+  id        String  @id @default(cuid())
+  comment   String
+  userId    String?
+  user      User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
