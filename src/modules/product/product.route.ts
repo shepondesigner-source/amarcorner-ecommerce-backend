@@ -57,11 +57,7 @@ router.get(
   authorize("USER"),
   asyncHandler(getdProductDeliveryCharge),
 );
-router.post(
-  "/discount-prices",
-  authenticate,
-  asyncHandler(getDiscountPricesByIds),
-);
+router.post("/discount-prices", asyncHandler(getDiscountPricesByIds));
 
 router.get("/:id", asyncHandler(productById));
 
