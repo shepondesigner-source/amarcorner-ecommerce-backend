@@ -26,7 +26,7 @@ router.post(
   controller.create,
 );
 
-router.put(
+router.patch(
   "/:id",
   authenticate,
   authorize("ADMIN"),
