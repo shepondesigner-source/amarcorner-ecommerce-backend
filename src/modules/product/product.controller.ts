@@ -41,7 +41,7 @@ export const getFeaturedProduct = async (req: Request, res: Response) => {
 
 export const getdProductDeliveryCharge = async (
   req: Request,
-  res: Response
+  res: Response,
 ) => {
   const userId = req.user?.id;
   if (userId) {
@@ -74,7 +74,7 @@ export const getProductsBySlug = async (req: Request, res: Response) => {
   const result = await service.getbySlug(
     slug as string,
     pageNumber,
-    limitNumber
+    limitNumber,
   );
 
   return res.json(result);
