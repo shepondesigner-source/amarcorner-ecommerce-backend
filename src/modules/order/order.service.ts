@@ -23,7 +23,7 @@ type CreateOrderInput = {
 
 export const createOrderService = async (
   userId: string,
-  data: CreateOrderInput
+  data: CreateOrderInput,
 ) => {
   /** 1️⃣ Get default shipping address */
   const shippingAddress = await prisma.shippingAddress.findFirst({
@@ -108,28 +108,28 @@ export const createOrderService = async (
     return order;
   });
 
-  try {
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (user?.email) {
-      await MailService.send({
-        to: user.email,
-        subject: `Your Order #${order.id} Invoice`,
-        html: invoiceTemplate({
-          orderId: order.id,
-          items: order.items.map((i) => ({
-            name: products.find((p) => p.id === i.productId)!.name,
-            quantity: i.quantity,
-            price: i.price,
-            discountPrice: i.discountPrice,
-          })),
-          total: totalAmount,
-          deliveryCharge: data.deliveryCharge,
-        }),
-      });
-    }
-  } catch (err) {
-    console.error("Failed to send order email:", err);
-  }
+  // try {
+  //   const user = await prisma.user.findUnique({ where: { id: userId } });
+  //   if (user?.email) {
+  //     await MailService.send({
+  //       to: user.email,
+  //       subject: `Your Order #${order.id} Invoice`,
+  //       html: invoiceTemplate({
+  //         orderId: order.id,
+  //         items: order.items.map((i) => ({
+  //           name: products.find((p) => p.id === i.productId)!.name,
+  //           quantity: i.quantity,
+  //           price: i.price,
+  //           discountPrice: i.discountPrice,
+  //         })),
+  //         total: totalAmount,
+  //         deliveryCharge: data.deliveryCharge,
+  //       }),
+  //     });
+  //   }
+  // } catch (err) {
+  //   console.error("Failed to send order email:", err);
+  // }
 
   return order;
 };
@@ -138,7 +138,7 @@ export const getOrderListService = async (
   userId: string,
   userRole: Role,
   page: number,
-  limit: number
+  limit: number,
 ) => {
   const skip = (page - 1) * limit;
 
@@ -221,7 +221,7 @@ export const updateOrderService = async (
   orderId: string,
   userId: string,
   role: Role,
-  payload: any
+  payload: any,
 ) => {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
