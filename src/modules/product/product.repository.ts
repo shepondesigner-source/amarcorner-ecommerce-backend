@@ -214,7 +214,6 @@ export class ProductRepository {
     const userAddress = await prisma.shippingAddress.findFirst({
       where: { userId: userId, isDefault: true },
     });
-    console.log(userAddress);
     if (userAddress?.district === "Dhaka") {
       return { rate: 60 };
     } else {

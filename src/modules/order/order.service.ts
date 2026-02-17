@@ -188,6 +188,7 @@ export const getOrderListService = async (
                 name: true,
                 slug: true,
                 shop: true,
+                shopPrice: true,
               },
             },
             size: {
