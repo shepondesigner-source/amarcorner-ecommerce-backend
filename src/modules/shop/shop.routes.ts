@@ -40,6 +40,6 @@ router.put(
   asyncHandler(updateShop),
 );
 
-router.delete("/:id", validate(deleteShopSchema), asyncHandler(deleteShop));
+router.delete("/:id",authenticate, validate(deleteShopSchema), asyncHandler(deleteShop));
 
 export default router;
