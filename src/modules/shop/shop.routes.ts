@@ -34,6 +34,7 @@ router.get("/user/:id", asyncHandler(getShopsByUser));
 
 router.put(
   "/:id",
+  authenticate,
   upload.single("image"),
   validate(updateShopSchema),
   asyncHandler(updateShop),
