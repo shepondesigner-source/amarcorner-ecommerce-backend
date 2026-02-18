@@ -16,6 +16,7 @@ import {
 import { validate } from "../../core/validation/validate";
 import { asyncHandler } from "../../core/utils/asyncHandler";
 import { authenticate } from "../../core/middlewares/auth.middleware";
+import { authorize } from "../../core/middlewares/authorize.middleware";
 
 const router = Router();
 const upload = multer();
@@ -40,6 +41,6 @@ router.put(
   asyncHandler(updateShop),
 );
 
-router.delete("/:id",authenticate, validate(deleteShopSchema), asyncHandler(deleteShop));
+router.delete("/:id",authenticate, authorize("ADMIN"), validate(deleteShopSchema), asyncHandler(deleteShop));
 
 export default router;
