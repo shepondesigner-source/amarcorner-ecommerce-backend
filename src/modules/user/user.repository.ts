@@ -46,4 +46,17 @@ export class UserRepository {
       where: { id },
     });
   }
+
+  filter(where: any, skip: number, take: number) {
+    return prisma.user.findMany({
+      where,
+      skip,
+      take,
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  count(where: any) {
+    return prisma.user.count({ where });
+  }
 }

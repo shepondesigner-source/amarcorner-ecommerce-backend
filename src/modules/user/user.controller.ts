@@ -43,3 +43,18 @@ export const deleteUser = async (req: Request, res: Response) => {
   await userService.deleteUser(req.params.id);
   res.json({ success: true, message: "User deleted successfully" });
 };
+export const getFilterUsers = async (req: Request, res: Response) => {
+  try {
+    const users = await userService.filterUsers(req.query);
+
+    res.json({
+      success: true,
+      data: users,
+    });
+  } catch (error: any) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};

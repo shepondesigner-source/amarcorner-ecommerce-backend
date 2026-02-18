@@ -6,6 +6,7 @@ import {
   updateUser,
   deleteUser,
   getAuthenticateUserInfo,
+  getFilterUsers,
 } from "./user.controller";
 import { createUserSchema, updateUserSchema } from "./user.schema";
 import { validate } from "../../core/validation/validate";
@@ -17,6 +18,7 @@ const router = Router();
 router.post("/", validate(createUserSchema), asyncHandler(createUser));
 router.get("/", authenticate, asyncHandler(getUsers));
 router.get("/my", authenticate, asyncHandler(getAuthenticateUserInfo));
+router.get("/filter", authenticate, asyncHandler(getFilterUsers));
 
 router.get("/:id", authenticate, asyncHandler(getUserById));
 router.put(
