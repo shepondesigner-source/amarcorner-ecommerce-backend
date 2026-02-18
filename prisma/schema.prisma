@@ -201,6 +201,8 @@ model Order {
   status      OrderStatus @default(PENDING)
   totalAmount Float
 
+  comment String?
+
   shippingAddressId String
   shippingAddress   ShippingAddress @relation(fields: [shippingAddressId], references: [id], onDelete: Restrict)
   deliveryCharge    Float           @default(0.00)

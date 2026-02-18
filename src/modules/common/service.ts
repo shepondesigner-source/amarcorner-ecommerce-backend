@@ -17,8 +17,6 @@
 //   },
 // };
 
-
-
 import { resend } from "../../config/mail";
 
 type SendMailOptions = {
@@ -30,7 +28,7 @@ type SendMailOptions = {
 export const MailService = {
   send: async ({ to, subject, html }: SendMailOptions) => {
     await resend.emails.send({
-      from: process.env.EMAIL_FROM || "onboarding@resend.dev",
+      from: "Website <website@resend.dev>",
       to,
       subject,
       html,
