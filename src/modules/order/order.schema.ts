@@ -4,6 +4,7 @@ import { OrderStatus, PaymentStatus } from "../../../generated/prisma";
 export const createOrderSchema = z.object({
   body: z.object({
     deliveryCharge: z.number().min(0),
+    comment: z.string().optional(),
     payment: z.object({
       method: z.enum(["COD", "BKASH"]),
       txId: z.string().optional(),

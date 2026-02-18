@@ -7,6 +7,7 @@ import { MailService } from "../common/service";
 
 type CreateOrderInput = {
   deliveryCharge: number;
+  comment?: string;
   payment: {
     method: "COD" | "BKASH";
     txId?: string;
@@ -82,6 +83,7 @@ export const createOrderService = async (
   const order = await prisma.$transaction(async (tx) => {
     const order = await tx.order.create({
       data: {
+        comment: data.comment,
         userId,
         shippingAddressId: shippingAddress.id,
         totalAmount,
