@@ -1,13 +1,36 @@
 import { Role } from "../../../generated/prisma";
 import { prisma } from "../../config/prisma";
 import { AppError } from "../../core/errors/AppError";
-import { ApiResponse } from "../../core/response/ApiResponse";
-import { invoiceTemplate } from "../../core/templates/invoice.template";
-import { MailService } from "../common/service";
+import bcrypt from "bcryptjs";
 
 type CreateOrderInput = {
   deliveryCharge: number;
+
   comment?: string;
+  payment: {
+    method: "COD" | "BKASH";
+    txId?: string;
+    amount: number;
+    bkashNumber?: string;
+  };
+  items: {
+    productId: string;
+    imageUrl: string;
+    sizeId?: string;
+    quantity: number;
+  }[];
+};
+
+type CreateOrderInputOpen = {
+  deliveryCharge: number;
+  comment?: string;
+  user: {
+    fullName: string;
+    email: string;
+    phone: string;
+    district: string;
+    address: string;
+  };
   payment: {
     method: "COD" | "BKASH";
     txId?: string;
@@ -24,7 +47,7 @@ type CreateOrderInput = {
 
 export const createOrderService = async (
   userId: string,
-  data: CreateOrderInput,
+  data: CreateOrderInput
 ) => {
   /** 1️⃣ Get default shipping address */
   const shippingAddress = await prisma.shippingAddress.findFirst({
@@ -136,11 +159,118 @@ export const createOrderService = async (
   return order;
 };
 
+export const createOrderServiceOpen = async (data: CreateOrderInputOpen) => {
+  /** 1️⃣ Find user by phone */
+  let user = await prisma.user.findFirst({
+    where: { phone: data.user.phone },
+  });
+
+  /** 2️⃣ If user not found → create */
+  if (!user) {
+    const hashedPassword = await bcrypt.hash("12345678", 10);
+
+    user = await prisma.user.create({
+      data: {
+        name: data.user.fullName,
+        email: data.user.email,
+        phone: data.user.phone,
+        password: hashedPassword,
+        role: "USER", // or UserRole.CUSTOMER if enum
+      },
+    });
+  }
+
+  /** 3️⃣ Create shipping address (always new for order) */
+  const shippingAddress = await prisma.shippingAddress.create({
+    data: {
+      userId: user.id,
+      name: data.user.fullName,
+      phone: data.user.phone,
+      district: data.user.district,
+      address: data.user.address,
+      isDefault: true,
+    },
+  });
+
+  /** 4️⃣ Fetch Products */
+  const productIds = data.items.map((i) => i.productId);
+
+  const products = await prisma.product.findMany({
+    where: {
+      id: { in: productIds },
+      isActive: true,
+    },
+  });
+
+  if (products.length !== data.items.length) {
+    throw new Error("Invalid or inactive product found");
+  }
+
+  /** 5️⃣ Calculate Total */
+  let totalAmount = 0;
+
+  const orderItems = data.items.map((item) => {
+    const product = products.find((p) => p.id === item.productId)!;
+
+    const price = product.discountPrice ?? product.price;
+    const lineTotal = price * item.quantity;
+    totalAmount += lineTotal;
+
+    return {
+      productId: product.id,
+      imageUrl: item.imageUrl,
+      sizeId: item.sizeId,
+      price: product.price,
+      discountPrice: product.discountPrice,
+      quantity: item.quantity,
+    };
+  });
+
+  totalAmount += data.deliveryCharge;
+
+  /** 6️⃣ Validate Payment */
+  if (data.payment.amount !== totalAmount) {
+    throw new Error("Payment amount mismatch");
+  }
+
+  /** 7️⃣ Transaction: Order + Payment */
+  const order = await prisma.$transaction(async (tx) => {
+    const createdOrder = await tx.order.create({
+      data: {
+        comment: data.comment,
+        userId: user.id,
+        shippingAddressId: shippingAddress.id,
+        totalAmount,
+        deliveryCharge: data.deliveryCharge,
+        items: {
+          create: orderItems,
+        },
+      },
+      include: {
+        items: true,
+      },
+    });
+
+    await tx.payment.create({
+      data: {
+        orderId: createdOrder.id,
+        method: data.payment.method,
+        txId: data.payment.txId?.trim() || null,
+        amount: data.payment.amount,
+        bkashNumber: data.payment.bkashNumber,
+      },
+    });
+
+    return createdOrder;
+  });
+
+  return order;
+};
 export const getOrderListService = async (
   userId: string,
   userRole: Role,
   page: number,
-  limit: number,
+  limit: number
 ) => {
   const skip = (page - 1) * limit;
 
@@ -224,7 +354,7 @@ export const updateOrderService = async (
   orderId: string,
   userId: string,
   role: Role,
-  payload: any,
+  payload: any
 ) => {
   const order = await prisma.order.findUnique({
     where: { id: orderId },

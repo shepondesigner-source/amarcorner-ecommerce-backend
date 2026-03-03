@@ -6,6 +6,7 @@ import { asyncHandler } from "../../core/utils/asyncHandler";
 import { validate } from "../../core/validation/validate";
 import {
   createOrderController,
+  createOrderControllerOpen,
   getOrderListController,
   updateOrderController,
 } from "./order.controller";
@@ -24,6 +25,11 @@ router.post(
   asyncHandler(createOrderController)
 );
 
+router.post(
+  "/user",
+  
+  asyncHandler(createOrderControllerOpen)
+);
 router.get("/", authenticate, asyncHandler(getOrderListController));
 router.put(
   "/:id",

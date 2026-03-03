@@ -41,7 +41,7 @@ export const getFeaturedProduct = async (req: Request, res: Response) => {
 
 export const getdProductDeliveryCharge = async (
   req: Request,
-  res: Response,
+  res: Response
 ) => {
   const userId = req.user?.id;
   if (userId) {
@@ -49,7 +49,16 @@ export const getdProductDeliveryCharge = async (
     res.json(featured);
   }
 };
-
+export const getdProductDeliveryChargeOpen = async (
+  req: Request,
+  res: Response
+) => {
+  const { district } = req.body;
+  if (district) {
+    const featured = await service.getDeliveryOpenRate(district);
+    res.json(featured);
+  }
+};
 export const getNewProducts = async (req: Request, res: Response) => {
   const result = await service.newProduct(req.query);
   res.json(result);
@@ -74,7 +83,7 @@ export const getProductsBySlug = async (req: Request, res: Response) => {
   const result = await service.getbySlug(
     slug as string,
     pageNumber,
-    limitNumber,
+    limitNumber
   );
 
   return res.json(result);

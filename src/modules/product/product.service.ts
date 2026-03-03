@@ -230,7 +230,7 @@ export class ProductService {
 
     /* ---------- 2. Images to delete ---------- */
     const imagesToDelete = product.imageUrls.filter(
-      (img) => !keepImages.includes(img),
+      (img) => !keepImages.includes(img)
     );
 
     for (const img of imagesToDelete) {
@@ -306,6 +306,11 @@ export class ProductService {
   async getDeliveryRate(id: string) {
     console.log(id);
     const rate = await this.repo.getDeliveryCharge(id);
+    return rate;
+  }
+
+  async getDeliveryOpenRate(district: string) {
+    const rate = await this.repo.getDeliveryChargeOpen(district);
     return rate;
   }
 

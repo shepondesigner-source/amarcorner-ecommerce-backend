@@ -6,10 +6,12 @@ import {
 } from "./order.schema";
 import {
   createOrderService,
+  createOrderServiceOpen,
   getOrderListService,
   updateOrderService,
 } from "./order.service";
 import { Role } from "../../../generated/prisma";
+import { body } from "express-validator";
 
 export const createOrderController = async (req: Request, res: Response) => {
   const parsed = createOrderSchema.parse({
@@ -24,6 +26,23 @@ export const createOrderController = async (req: Request, res: Response) => {
     message: "Order created successfully",
     data: order,
   });
+};
+
+export const createOrderControllerOpen = async (
+  req: Request,
+  res: Response
+) => {
+  // const parsed = createOrderSchema.parse({
+  //   body: req.body,
+  // });
+
+  console.log(req.body);
+  const order = await createOrderServiceOpen( req.body);
+
+  // res.status(201).json({
+  //   message: "Order created successfully",
+  //   data: order,
+  // });
 };
 
 export const getOrderListController = async (req: Request, res: Response) => {
@@ -58,7 +77,7 @@ export const updateOrderController = async (req: Request, res: Response) => {
     parsed.params.id,
     userId,
     role,
-    parsed.body,
+    parsed.body
   );
 
   res.status(200).json({

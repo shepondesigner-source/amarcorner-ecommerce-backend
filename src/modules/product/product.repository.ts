@@ -221,6 +221,14 @@ export class ProductRepository {
     }
   }
 
+  async getDeliveryChargeOpen(district: string) {
+    if (district === "Dhaka") {
+      return { rate: 60 };
+    } else {
+      return { rate: 110 };
+    }
+  }
+
   async getSearchProductList(searchText: string) {
     return prisma.product.findMany({
       where: {

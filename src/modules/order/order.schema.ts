@@ -18,7 +18,31 @@ export const createOrderSchema = z.object({
           imageUrl: z.string(),
           sizeId: z.string().optional(),
           quantity: z.number().int().positive(),
-        }),
+        })
+      )
+      .min(1),
+  }),
+});
+
+export const createOrderSchemaOpen = z.object({
+  body: z.object({
+    deliveryCharge: z.number().min(0),
+    comment: z.string().optional(),
+
+    payment: z.object({
+      method: z.enum(["COD", "BKASH"]),
+      txId: z.string().optional(),
+      amount: z.number(),
+      bkashNumber: z.string().optional(),
+    }),
+    items: z
+      .array(
+        z.object({
+          productId: z.string(),
+          imageUrl: z.string(),
+          sizeId: z.string().optional(),
+          quantity: z.number().int().positive(),
+        })
       )
       .min(1),
   }),

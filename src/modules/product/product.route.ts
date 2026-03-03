@@ -16,6 +16,7 @@ import {
   deleteProduct,
   getDiscountPricesByIds,
   getdProductDeliveryCharge,
+  getdProductDeliveryChargeOpen,
   getFeaturedProduct,
   getNewProducts,
   getProducts,
@@ -34,14 +35,14 @@ router.post(
   "/",
   upload.array("images", 15),
   validate(createProductSchema),
-  asyncHandler(createProduct),
+  asyncHandler(createProduct)
 );
 
 router.post(
   "/vendor",
   upload.array("images", 15),
   validate(createVendorProductSchema),
-  asyncHandler(createVendorProduct),
+  asyncHandler(createVendorProduct)
 );
 router.get("/", asyncHandler(getProducts));
 router.get("/admin", authenticate, asyncHandler(getProducts));
@@ -55,7 +56,14 @@ router.get(
   "/rate",
   authenticate,
   authorize("USER"),
-  asyncHandler(getdProductDeliveryCharge),
+  asyncHandler(getdProductDeliveryCharge)
+);
+
+//open charge
+router.post(
+  "/charge",
+
+  asyncHandler(getdProductDeliveryChargeOpen)
 );
 router.post("/discount-prices", asyncHandler(getDiscountPricesByIds));
 
@@ -66,7 +74,7 @@ router.put(
   upload.array("images", 15),
   authenticate,
   validate(updateProductSchema),
-  asyncHandler(updateProduct),
+  asyncHandler(updateProduct)
 );
 
 router.delete(
@@ -74,7 +82,7 @@ router.delete(
   authenticate,
   authorize("ADMIN"),
   validate(deleteProductSchema),
-  asyncHandler(deleteProduct),
+  asyncHandler(deleteProduct)
 );
 
 export default router;
