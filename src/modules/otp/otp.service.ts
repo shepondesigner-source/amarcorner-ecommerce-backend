@@ -46,7 +46,7 @@ export class OtpService {
 
     /* ---------- Send OTP Email ---------- */
     await MailService.send({
-      to: user.email,
+      to: user.email || "mahudtalal2@gmail.com",
       subject: "Your Password Reset OTP",
       html: otpTemplate({
         name: user.name,
