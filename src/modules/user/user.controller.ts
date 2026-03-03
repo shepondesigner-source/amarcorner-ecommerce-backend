@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { UserService } from "./user.service";
+import { prisma } from "../../config/prisma";
 
 const userService = new UserService();
 
@@ -23,6 +24,17 @@ export const getAuthenticateUserInfo = async (req: Request, res: Response) => {
   const userId = req?.user?.id || "";
   const users = await userService.getAuthenticateUser(userId);
   res.json({ success: true, data: users });
+};
+
+export const getUserInfo = async (req: Request, res: Response) => {
+  const { phone } = req.body;
+  const users = await userService.getUserOpen(phone);
+  const address = await prisma.shippingAddress.findFirst({
+    where: {
+      userId: users?.id,
+    },
+  });
+  res.json({ success: true, data: address });
 };
 
 export const getUserById = async (req: Request, res: Response) => {

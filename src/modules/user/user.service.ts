@@ -25,6 +25,9 @@ export class UserService {
   getAuthenticateUser(userId: string) {
     return this.userRepo.findAuthenticateUser(userId);
   }
+  getUserOpen(phone: string) {
+    return this.userRepo.findUser(phone);
+  }
 
   async getUserById(id: string) {
     const user = await this.userRepo.findById(id);

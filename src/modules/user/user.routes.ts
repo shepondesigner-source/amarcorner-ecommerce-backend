@@ -7,6 +7,7 @@ import {
   deleteUser,
   getAuthenticateUserInfo,
   getFilterUsers,
+  getUserInfo,
 } from "./user.controller";
 import { createUserSchema, updateUserSchema } from "./user.schema";
 import { validate } from "../../core/validation/validate";
@@ -19,6 +20,7 @@ router.post("/", validate(createUserSchema), asyncHandler(createUser));
 router.get("/", authenticate, asyncHandler(getUsers));
 router.get("/my", authenticate, asyncHandler(getAuthenticateUserInfo));
 router.get("/filter", authenticate, asyncHandler(getFilterUsers));
+router.post("/phone", asyncHandler(getUserInfo));
 
 router.get("/:id", authenticate, asyncHandler(getUserById));
 router.put(

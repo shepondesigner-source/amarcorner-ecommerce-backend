@@ -34,6 +34,20 @@ export class UserRepository {
     });
   }
 
+  findUser(id: string) {
+    return prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        address: true,
+        email: true,
+        phone: true,
+        createdAt: true,
+      },
+    });
+  }
+
   update(id: string, data: any) {
     return prisma.user.update({
       where: { id },
