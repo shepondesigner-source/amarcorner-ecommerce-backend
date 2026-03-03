@@ -1,32 +1,17 @@
 import { Role } from "../../../generated/prisma";
 import { prisma } from "../../config/prisma";
 import { AppError } from "../../core/errors/AppError";
+import { ApiResponse } from "../../core/response/ApiResponse";
+import { invoiceTemplate } from "../../core/templates/invoice.template";
+import { MailService } from "../common/service";
 import bcrypt from "bcryptjs";
-
-type CreateOrderInput = {
-  deliveryCharge: number;
-
-  comment?: string;
-  payment: {
-    method: "COD" | "BKASH";
-    txId?: string;
-    amount: number;
-    bkashNumber?: string;
-  };
-  items: {
-    productId: string;
-    imageUrl: string;
-    sizeId?: string;
-    quantity: number;
-  }[];
-};
 
 type CreateOrderInputOpen = {
   deliveryCharge: number;
   comment?: string;
   user: {
     fullName: string;
-    email: string;
+    email?: string;
     phone: string;
     district: string;
     address: string;
@@ -44,10 +29,26 @@ type CreateOrderInputOpen = {
     quantity: number;
   }[];
 };
+type CreateOrderInput = {
+  deliveryCharge: number;
+  comment?: string;
+  payment: {
+    method: "COD" | "BKASH";
+    txId?: string;
+    amount: number;
+    bkashNumber?: string;
+  };
+  items: {
+    productId: string;
+    imageUrl: string;
+    sizeId?: string;
+    quantity: number;
+  }[];
+};
 
 export const createOrderService = async (
   userId: string,
-  data: CreateOrderInput
+  data: CreateOrderInput,
 ) => {
   /** 1️⃣ Get default shipping address */
   const shippingAddress = await prisma.shippingAddress.findFirst({
@@ -172,7 +173,7 @@ export const createOrderServiceOpen = async (data: CreateOrderInputOpen) => {
     user = await prisma.user.create({
       data: {
         name: data.user.fullName,
-        email: data.user.email,
+        email: data.user.email || "",
         phone: data.user.phone,
         password: hashedPassword,
         role: "USER", // or UserRole.CUSTOMER if enum
@@ -266,11 +267,12 @@ export const createOrderServiceOpen = async (data: CreateOrderInputOpen) => {
 
   return order;
 };
+
 export const getOrderListService = async (
   userId: string,
   userRole: Role,
   page: number,
-  limit: number
+  limit: number,
 ) => {
   const skip = (page - 1) * limit;
 
@@ -354,7 +356,7 @@ export const updateOrderService = async (
   orderId: string,
   userId: string,
   role: Role,
-  payload: any
+  payload: any,
 ) => {
   const order = await prisma.order.findUnique({
     where: { id: orderId },

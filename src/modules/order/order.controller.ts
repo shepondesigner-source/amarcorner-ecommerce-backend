@@ -36,13 +36,13 @@ export const createOrderControllerOpen = async (
   //   body: req.body,
   // });
 
-  console.log(req.body);
+  // console.log(req.body);
   const order = await createOrderServiceOpen( req.body);
 
-  // res.status(201).json({
-  //   message: "Order created successfully",
-  //   data: order,
-  // });
+  res.status(201).json({
+    message: "Order created successfully",
+    data: order,
+  });
 };
 
 export const getOrderListController = async (req: Request, res: Response) => {

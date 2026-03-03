@@ -34,9 +34,9 @@ export class UserRepository {
     });
   }
 
-  findUser(id: string) {
-    return prisma.user.findUnique({
-      where: { id },
+  findUser(phone: string) {
+    return prisma.user.findFirst({
+      where: { phone: phone },
       select: {
         id: true,
         name: true,

@@ -13,8 +13,6 @@ import {
 
 const router = Router();
 
-router.use(authenticate);
-
 /* ================= USER ROUTES ================= */
 
 // Create order
@@ -22,20 +20,16 @@ router.post(
   "/",
   authenticate,
   // validate(createOrderSchema),
-  asyncHandler(createOrderController)
+  asyncHandler(createOrderController),
 );
 
-router.post(
-  "/user",
-  
-  asyncHandler(createOrderControllerOpen)
-);
+router.post("/user", asyncHandler(createOrderControllerOpen));
 router.get("/", authenticate, asyncHandler(getOrderListController));
 router.put(
   "/:id",
   authenticate,
   validate(updateOrderSchema),
-  asyncHandler(updateOrderController)
+  asyncHandler(updateOrderController),
 );
 
 export default router;

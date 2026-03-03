@@ -29,12 +29,19 @@ export const getAuthenticateUserInfo = async (req: Request, res: Response) => {
 export const getUserInfo = async (req: Request, res: Response) => {
   const { phone } = req.body;
   const users = await userService.getUserOpen(phone);
-  const address = await prisma.shippingAddress.findFirst({
-    where: {
-      userId: users?.id,
-    },
-  });
-  res.json({ success: true, data: address });
+  if (users) {
+    const address = await prisma.shippingAddress.findFirst({
+      where: {
+        userId: users?.id,
+      },
+    });
+    res.json({ success: true, data: address });
+  } else {
+    res.json({
+      success: false,
+      data: { name: "", email: "", phone: "", district: "", address: "" },
+    });
+  }
 };
 
 export const getUserById = async (req: Request, res: Response) => {
