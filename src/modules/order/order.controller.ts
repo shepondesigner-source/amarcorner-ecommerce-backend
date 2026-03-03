@@ -2,11 +2,13 @@ import { Request, Response } from "express";
 import {
   createOrderSchema,
   getOrderListSchema,
+  getOrderSchema,
   updateOrderSchema,
 } from "./order.schema";
 import {
   createOrderService,
   createOrderServiceOpen,
+  getOpenOrderService,
   getOrderListService,
   updateOrderService,
 } from "./order.service";
@@ -30,14 +32,14 @@ export const createOrderController = async (req: Request, res: Response) => {
 
 export const createOrderControllerOpen = async (
   req: Request,
-  res: Response
+  res: Response,
 ) => {
   // const parsed = createOrderSchema.parse({
   //   body: req.body,
   // });
 
   // console.log(req.body);
-  const order = await createOrderServiceOpen( req.body);
+  const order = await createOrderServiceOpen(req.body);
 
   res.status(201).json({
     message: "Order created successfully",
@@ -64,6 +66,19 @@ export const getOrderListController = async (req: Request, res: Response) => {
   });
 };
 
+export const getOpenOrderController = async (req: Request, res: Response) => {
+  const parsed = getOrderSchema.parse({
+    params: req.params,
+  });
+
+  const order = await getOpenOrderService(parsed.params.id);
+
+  res.status(200).json({
+    message: "Order updated successfully",
+    data: order,
+  });
+};
+
 export const updateOrderController = async (req: Request, res: Response) => {
   const parsed = updateOrderSchema.parse({
     params: req.params,
@@ -77,7 +92,7 @@ export const updateOrderController = async (req: Request, res: Response) => {
     parsed.params.id,
     userId,
     role,
-    parsed.body
+    parsed.body,
   );
 
   res.status(200).json({

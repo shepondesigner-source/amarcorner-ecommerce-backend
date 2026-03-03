@@ -173,7 +173,7 @@ export const createOrderServiceOpen = async (data: CreateOrderInputOpen) => {
     user = await prisma.user.create({
       data: {
         name: data.user.fullName,
-        email: data.user.email || "",
+        email: data.user.email || null,
         phone: data.user.phone,
         password: hashedPassword,
         role: "USER", // or UserRole.CUSTOMER if enum
@@ -181,17 +181,40 @@ export const createOrderServiceOpen = async (data: CreateOrderInputOpen) => {
     });
   }
 
-  /** 3️⃣ Create shipping address (always new for order) */
-  const shippingAddress = await prisma.shippingAddress.create({
-    data: {
+  /** 3️⃣ Check if shipping address exists */
+  let shippingAddress = await prisma.shippingAddress.findFirst({
+    where: {
       userId: user.id,
-      name: data.user.fullName,
-      phone: data.user.phone,
-      district: data.user.district,
-      address: data.user.address,
-      isDefault: true,
     },
   });
+
+  /** If exists → update */
+  if (shippingAddress) {
+    shippingAddress = await prisma.shippingAddress.update({
+      where: {
+        id: shippingAddress.id,
+      },
+      data: {
+        name: data.user.fullName,
+        phone: data.user.phone,
+        district: data.user.district,
+        address: data.user.address,
+        isDefault: true,
+      },
+    });
+  } else {
+    /** If not exists → create */
+    shippingAddress = await prisma.shippingAddress.create({
+      data: {
+        userId: user.id,
+        name: data.user.fullName,
+        phone: data.user.phone,
+        district: data.user.district,
+        address: data.user.address,
+        isDefault: true,
+      },
+    });
+  }
 
   /** 4️⃣ Fetch Products */
   const productIds = data.items.map((i) => i.productId);
@@ -432,4 +455,20 @@ export const updateOrderService = async (
         : undefined,
     },
   });
+};
+
+export const getOpenOrderService = async (orderId: string) => {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: {
+      items: {
+        include: { product: true },
+      },
+      payment: true,
+      shippingAddress: true,
+    },
+  });
+
+  /* ================= ADMIN ================= */
+  return order;
 };

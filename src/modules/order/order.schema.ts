@@ -18,7 +18,7 @@ export const createOrderSchema = z.object({
           imageUrl: z.string(),
           sizeId: z.string().optional(),
           quantity: z.number().int().positive(),
-        })
+        }),
       )
       .min(1),
   }),
@@ -42,7 +42,7 @@ export const createOrderSchemaOpen = z.object({
           imageUrl: z.string(),
           sizeId: z.string().optional(),
           quantity: z.number().int().positive(),
-        })
+        }),
       )
       .min(1),
   }),
@@ -61,5 +61,11 @@ export const updateOrderSchema = z.object({
     status: z.enum(OrderStatus).optional(),
     deliveryCharge: z.number().optional(),
     paymentStatus: z.enum(PaymentStatus).optional(),
+  }),
+});
+
+export const getOrderSchema = z.object({
+  params: z.object({
+    id: z.cuid(), // Order ID from URL
   }),
 });

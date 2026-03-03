@@ -7,6 +7,7 @@ import { validate } from "../../core/validation/validate";
 import {
   createOrderController,
   createOrderControllerOpen,
+  getOpenOrderController,
   getOrderListController,
   updateOrderController,
 } from "./order.controller";
@@ -24,7 +25,9 @@ router.post(
 );
 
 router.post("/user", asyncHandler(createOrderControllerOpen));
+
 router.get("/", authenticate, asyncHandler(getOrderListController));
+router.get("/:id", asyncHandler(getOpenOrderController));
 router.put(
   "/:id",
   authenticate,
