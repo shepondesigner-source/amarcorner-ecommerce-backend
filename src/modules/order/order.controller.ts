@@ -8,6 +8,7 @@ import {
 import {
   createOrderService,
   createOrderServiceOpen,
+  deleteOrderService,
   getOpenOrderService,
   getOrderListService,
   updateOrderService,
@@ -32,7 +33,7 @@ export const createOrderController = async (req: Request, res: Response) => {
 
 export const createOrderControllerOpen = async (
   req: Request,
-  res: Response,
+  res: Response
 ) => {
   // const parsed = createOrderSchema.parse({
   //   body: req.body,
@@ -92,11 +93,19 @@ export const updateOrderController = async (req: Request, res: Response) => {
     parsed.params.id,
     userId,
     role,
-    parsed.body,
+    parsed.body
   );
 
   res.status(200).json({
     message: "Order updated successfully",
     data: order,
   });
+};
+
+export const deleteOrderController = async (req: Request, res: Response) => {
+  const order = await deleteOrderService(req.params.id);
+
+  res.status(200).json(
+    order,
+  );
 };

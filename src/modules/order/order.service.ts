@@ -1,9 +1,7 @@
 import { Role } from "../../../generated/prisma";
 import { prisma } from "../../config/prisma";
 import { AppError } from "../../core/errors/AppError";
-import { ApiResponse } from "../../core/response/ApiResponse";
-import { invoiceTemplate } from "../../core/templates/invoice.template";
-import { MailService } from "../common/service";
+
 import bcrypt from "bcryptjs";
 
 type CreateOrderInputOpen = {
@@ -48,7 +46,7 @@ type CreateOrderInput = {
 
 export const createOrderService = async (
   userId: string,
-  data: CreateOrderInput,
+  data: CreateOrderInput
 ) => {
   /** 1️⃣ Get default shipping address */
   const shippingAddress = await prisma.shippingAddress.findFirst({
@@ -295,7 +293,7 @@ export const getOrderListService = async (
   userId: string,
   userRole: Role,
   page: number,
-  limit: number,
+  limit: number
 ) => {
   const skip = (page - 1) * limit;
 
@@ -379,7 +377,7 @@ export const updateOrderService = async (
   orderId: string,
   userId: string,
   role: Role,
-  payload: any,
+  payload: any
 ) => {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
@@ -471,4 +469,13 @@ export const getOpenOrderService = async (orderId: string) => {
 
   /* ================= ADMIN ================= */
   return order;
+};
+
+export const deleteOrderService = async (orderId: string) => {
+  try {
+    const orderDelete = await prisma.order.delete({ where: { id: orderId } });
+    return { success: true, message: "Order is deleted." };
+  } catch (error) {
+    return { success: false, message: `${error}` };
+  }
 };

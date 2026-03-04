@@ -7,6 +7,7 @@ import { validate } from "../../core/validation/validate";
 import {
   createOrderController,
   createOrderControllerOpen,
+  deleteOrderController,
   getOpenOrderController,
   getOrderListController,
   updateOrderController,
@@ -34,5 +35,7 @@ router.put(
   validate(updateOrderSchema),
   asyncHandler(updateOrderController),
 );
+router.delete("/:id", asyncHandler(deleteOrderController));
+
 
 export default router;
