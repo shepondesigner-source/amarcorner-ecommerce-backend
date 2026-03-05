@@ -143,6 +143,7 @@ export class ProductRepository {
         name: true,
         description: true,
         price: true,
+        stock: true,
         discountPrice: true,
         imageUrls: true,
         rating: true,
@@ -160,6 +161,7 @@ export class ProductRepository {
         select: {
           id: true,
           name: true,
+          stock: true,
           description: true,
           price: true,
           discountPrice: true,
