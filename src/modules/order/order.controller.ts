@@ -40,8 +40,13 @@ export const createOrderControllerOpen = async (
   // });
 
   // console.log(req.body);
-  const order = await createOrderServiceOpen(req.body);
-
+  const order: any = await createOrderServiceOpen(req.body);
+  if (order.length === 0) {
+    res.status(500).json({
+      message: "Internal server error",
+      data: order,
+    });
+  }
   res.status(201).json({
     message: "Order created successfully",
     data: order,
@@ -105,7 +110,5 @@ export const updateOrderController = async (req: Request, res: Response) => {
 export const deleteOrderController = async (req: Request, res: Response) => {
   const order = await deleteOrderService(req.params.id);
 
-  res.status(200).json(
-    order,
-  );
+  res.status(200).json(order);
 };

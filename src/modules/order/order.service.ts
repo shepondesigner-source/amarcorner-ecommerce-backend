@@ -216,6 +216,9 @@ export const createOrderServiceOpen = async (data: CreateOrderInputOpen) => {
 
   /** 4️⃣ Fetch Products */
   const productIds = data.items.map((i) => i.productId);
+  if (productIds.length === 0) {
+    return [];
+  }
 
   const products = await prisma.product.findMany({
     where: {
