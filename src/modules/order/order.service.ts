@@ -46,7 +46,7 @@ type CreateOrderInput = {
 
 export const createOrderService = async (
   userId: string,
-  data: CreateOrderInput
+  data: CreateOrderInput,
 ) => {
   /** 1️⃣ Get default shipping address */
   const shippingAddress = await prisma.shippingAddress.findFirst({
@@ -296,7 +296,7 @@ export const getOrderListService = async (
   userId: string,
   userRole: Role,
   page: number,
-  limit: number
+  limit: number,
 ) => {
   const skip = (page - 1) * limit;
 
@@ -380,7 +380,7 @@ export const updateOrderService = async (
   orderId: string,
   userId: string,
   role: Role,
-  payload: any
+  payload: any,
 ) => {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
@@ -454,6 +454,19 @@ export const updateOrderService = async (
             update: { status: payload.paymentStatus },
           }
         : undefined,
+    },
+  });
+};
+
+export const updateOrderAmountService = async (
+  orderId: string,
+  amount: number,
+) => {
+  /* ================= ADMIN ================= */
+  return prisma.order.update({
+    where: { id: orderId },
+    data: {
+      totalAmount: amount,
     },
   });
 };

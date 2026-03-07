@@ -3,6 +3,7 @@ import {
   createOrderSchema,
   getOrderListSchema,
   getOrderSchema,
+  updateOrderAmountSchema,
   updateOrderSchema,
 } from "./order.schema";
 import {
@@ -11,6 +12,7 @@ import {
   deleteOrderService,
   getOpenOrderService,
   getOrderListService,
+  updateOrderAmountService,
   updateOrderService,
 } from "./order.service";
 import { Role } from "../../../generated/prisma";
@@ -99,6 +101,25 @@ export const updateOrderController = async (req: Request, res: Response) => {
     userId,
     role,
     parsed.body
+  );
+
+  res.status(200).json({
+    message: "Order updated successfully",
+    data: order,
+  });
+};
+
+
+export const updateOrderPriceController = async (req: Request, res: Response) => {
+  const parsed = updateOrderAmountSchema.parse({
+    params: req.params,
+    body: req.body,
+  });
+
+
+  const order = await updateOrderAmountService(
+    parsed.params.id,
+    parsed.body.totalAmount
   );
 
   res.status(200).json({

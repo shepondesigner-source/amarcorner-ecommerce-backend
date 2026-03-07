@@ -46,6 +46,11 @@ export const OrderRepository = {
       where: { id },
       data: { status },
     }),
+  updatePrice: (id: string, amount: number) =>
+    prisma.order.update({
+      where: { id },
+      data: { totalAmount: amount },
+    }),
 
   delete: (id: string) =>
     prisma.order.delete({

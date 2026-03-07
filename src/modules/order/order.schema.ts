@@ -64,6 +64,15 @@ export const updateOrderSchema = z.object({
   }),
 });
 
+export const updateOrderAmountSchema = z.object({
+  params: z.object({
+    id: z.cuid(), // Order ID from URL
+  }),
+  body: z.object({
+    totalAmount: z.number().positive(),
+  }),
+});
+
 export const getOrderSchema = z.object({
   params: z.object({
     id: z.cuid(), // Order ID from URL
