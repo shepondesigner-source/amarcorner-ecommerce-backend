@@ -483,7 +483,6 @@ export const getOpenOrderService = async (orderId: string) => {
     },
   });
 
-  /* ================= ADMIN ================= */
   return order;
 };
 
