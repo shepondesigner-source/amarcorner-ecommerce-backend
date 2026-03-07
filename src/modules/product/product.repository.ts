@@ -218,7 +218,7 @@ export class ProductRepository {
     if (userAddress?.district === "Dhaka") {
       return { rate: 60 };
     } else {
-      return { rate: 110 };
+      return { rate: 120 };
     }
   }
 
@@ -226,7 +226,7 @@ export class ProductRepository {
     if (district === "Dhaka") {
       return { rate: 60 };
     } else {
-      return { rate: 110 };
+      return { rate: 120 };
     }
   }
 
