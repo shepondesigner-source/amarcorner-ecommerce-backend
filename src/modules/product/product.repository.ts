@@ -197,6 +197,20 @@ export class ProductRepository {
       },
     });
   }
+  async findByIdRelated(id: string) {
+    return prisma.product.findFirst({
+      where: { id },
+
+      include: {
+        sizes: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+  }
   async getDiscountPricesByIds(productIds: string[]) {
     return prisma.product.findMany({
       where: {

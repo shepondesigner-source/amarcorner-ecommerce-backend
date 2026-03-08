@@ -94,6 +94,11 @@ export const productById = async (req: Request, res: Response) => {
   res.json(featured);
 };
 
+export const productByIdRelated = async (req: Request, res: Response) => {
+  const featured = await service.getRelatedProducts(req.params.id);
+  res.json(featured);
+};
+
 export const productBySearchText = async (req: Request, res: Response) => {
   const { searchText } = req.body;
   const serchProducts = await service.getSearchProductList(searchText);

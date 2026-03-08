@@ -22,6 +22,7 @@ import {
   getProducts,
   getProductsBySlug,
   productById,
+  productByIdRelated,
   productBySearchText,
   updateProduct,
 } from "./product.controller";
@@ -66,6 +67,7 @@ router.post(
   asyncHandler(getdProductDeliveryChargeOpen)
 );
 router.post("/discount-prices", asyncHandler(getDiscountPricesByIds));
+router.get("/related/:id", asyncHandler(productByIdRelated));
 
 router.get("/:id", asyncHandler(productById));
 

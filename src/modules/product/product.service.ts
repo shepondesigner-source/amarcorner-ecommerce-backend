@@ -290,6 +290,29 @@ export class ProductService {
     const product = await this.repo.findById(id);
     return product;
   }
+
+  async getRelatedProducts(id: string) {
+    // 1️⃣ get current product
+    const product = await this.repo.findById(id);
+
+    if (!product) {
+      throw new Error("Product not found");
+    }
+
+    // 2️⃣ find related
+    const relatedProducts = await prisma.product.findMany({
+      where: {
+        categoryId: product.categoryId,
+        id: {
+          not: id, // exclude current product
+        },
+        isActive: true,
+      },
+      take: 8, // limit
+    });
+
+    return relatedProducts;
+  }
   async getbySlug(slug: string, page: number, limit: number) {
     const pages = Number(page) || 1;
     const limits = Number(limit) || 10;
