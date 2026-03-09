@@ -5,7 +5,7 @@ import { OtpRepository } from "./otp.repository";
 import { OtpPurpose } from "./otp.type";
 import { BadRequestError } from "../../core/errors/HttpError";
 import { prisma } from "../../config/prisma";
-import { MailService } from "../common/service";
+import { MailService, sendOtp } from "../common/service";
 import { otpTemplate } from "../../core/templates/otp.template";
 
 export class OtpService {
@@ -45,15 +45,16 @@ export class OtpService {
     });
 
     /* ---------- Send OTP Email ---------- */
-    await MailService.send({
-      to: user.email || "mahudtalal2@gmail.com",
-      subject: "Your Password Reset OTP",
-      html: otpTemplate({
-        name: user.name,
-        otp: rawOtp,
-        storeName: "YourStoreName",
-      }),
-    });
+    await sendOtp(user.email || "mahudtalal2@gmail.com", rawOtp);
+    // await MailService.send({
+    //   to: user.email || "mahudtalal2@gmail.com",
+    //   subject: "Your Password Reset OTP",
+    //   html: otpTemplate({
+    //     name: user.name,
+    //     otp: rawOtp,
+    //     storeName: "YourStoreName",
+    //   }),
+    // });
 
     /* ---------- Never return hashed OTP ---------- */
     return rawOtp; // only if you really need it (usually not)
@@ -62,7 +63,7 @@ export class OtpService {
   async verifyOtp(
     email: string | undefined,
     purpose: OtpPurpose,
-    code: string,
+    code: string
   ) {
     if (!email) {
       throw new BadRequestError("Email is required");

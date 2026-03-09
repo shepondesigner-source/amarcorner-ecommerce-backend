@@ -176,6 +176,14 @@ export class ProductRepository {
           imageUrls: true,
           rating: true,
         },
+        orderBy: [
+          {
+            stock: "desc", // products with stock first
+          },
+          {
+            createdAt: "desc", // newest first
+          },
+        ],
         skip,
         take,
       }),

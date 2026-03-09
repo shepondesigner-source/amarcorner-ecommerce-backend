@@ -35,3 +35,16 @@ export const MailService = {
     });
   },
 };
+
+export async function sendOtp(email: string, otp: string) {
+  await fetch("https://www.amarcorner.com/api/otp", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      to: email,
+      message: `Your OTP is ${otp}. It will expire in 5 minutes.`,
+    }),
+  });
+}
