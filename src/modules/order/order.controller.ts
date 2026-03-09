@@ -65,8 +65,9 @@ export const getOrderListController = async (req: Request, res: Response) => {
 
   const page = Number(parsed.query.page ?? 1);
   const limit = Number(parsed.query.limit ?? 10);
+  const search = parsed.query.search;
 
-  const result = await getOrderListService(userId, userRole, page, limit);
+  const result = await getOrderListService(userId, userRole, page, limit,search);
 
   res.status(200).json({
     message: "Order list fetched successfully",

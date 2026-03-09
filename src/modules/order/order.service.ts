@@ -312,7 +312,9 @@ export const getOrderListService = async (
   userId: string,
   userRole: Role,
   page: number,
-  limit: number
+  limit: number,
+  search:string | undefined
+
 ) => {
   const skip = (page - 1) * limit;
 
@@ -336,6 +338,23 @@ export const getOrderListService = async (
       },
     };
   }
+  if (search) {
+  whereCondition.user = {
+    OR: [
+      {
+        phone: {
+          contains: search,
+        },
+      },
+      {
+        name: {
+          contains: search,
+          mode: "insensitive",
+        },
+      },
+    ],
+  };
+}
 
   // ADMIN → no filter (see all orders)
 
