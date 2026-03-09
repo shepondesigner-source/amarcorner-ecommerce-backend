@@ -136,8 +136,17 @@ export class ProductRepository {
   async featuredProduct() {
     return prisma.product.findMany({
       where: {
-        AND: [{ isFeatured: true }, { isActive: true }],
+        isFeatured: true,
+        isActive: true,
       },
+      orderBy: [
+        {
+          stock: "desc", // products with stock first
+        },
+        {
+          createdAt: "desc", // newest first
+        },
+      ],
       select: {
         id: true,
         name: true,
