@@ -46,7 +46,7 @@ type CreateOrderInput = {
 
 export const createOrderService = async (
   userId: string,
-  data: CreateOrderInput,
+  data: CreateOrderInput
 ) => {
   /** 1️⃣ Get default shipping address */
   const shippingAddress = await prisma.shippingAddress.findFirst({
@@ -168,15 +168,31 @@ export const createOrderServiceOpen = async (data: CreateOrderInputOpen) => {
   if (!user) {
     const hashedPassword = await bcrypt.hash("12345678", 10);
 
-    user = await prisma.user.create({
-      data: {
-        name: data.user.fullName,
-        email: data.user.email || null,
-        phone: data.user.phone,
-        password: hashedPassword,
-        role: "USER", // or UserRole.CUSTOMER if enum
-      },
-    });
+    let emailUser = data.user.email
+      ? await prisma.user.findUnique({
+          where: { email: data.user.email },
+        })
+      : null;
+
+    if (emailUser) {
+      user = await prisma.user.update({
+        where: { id: emailUser.id },
+        data: {
+          name: data.user.fullName,
+          phone: data.user.phone,
+        },
+      });
+    } else {
+      user = await prisma.user.create({
+        data: {
+          name: data.user.fullName,
+          email: data.user.email || null,
+          phone: data.user.phone,
+          password: hashedPassword,
+          role: "USER",
+        },
+      });
+    }
   }
 
   /** 3️⃣ Check if shipping address exists */
@@ -296,7 +312,7 @@ export const getOrderListService = async (
   userId: string,
   userRole: Role,
   page: number,
-  limit: number,
+  limit: number
 ) => {
   const skip = (page - 1) * limit;
 
@@ -380,7 +396,7 @@ export const updateOrderService = async (
   orderId: string,
   userId: string,
   role: Role,
-  payload: any,
+  payload: any
 ) => {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
@@ -460,7 +476,7 @@ export const updateOrderService = async (
 
 export const updateOrderAmountService = async (
   orderId: string,
-  amount: number,
+  amount: number
 ) => {
   /* ================= ADMIN ================= */
   return prisma.order.update({
