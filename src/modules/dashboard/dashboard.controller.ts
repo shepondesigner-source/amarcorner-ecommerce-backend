@@ -1,6 +1,22 @@
 import { Request, Response } from "express";
 import { prisma } from "../../config/prisma";
+const getShopFilter = (userId: string, role: string) => {
+  if (role === "SHOP_OWNER") {
+    return {
+      items: {
+        some: {
+          product: {
+            shop: {
+              ownerId: userId,
+            },
+          },
+        },
+      },
+    };
+  }
 
+  return {}; // ADMIN sees all
+};
 const getStartDate = (range: string): Date => {
   const now = new Date();
   switch (range) {
@@ -19,43 +35,81 @@ const getStartDate = (range: string): Date => {
 
 export const DashboardController = {
   stats: async (req: Request, res: Response) => {
+    const role = req.user?.role!;
+    const userId = req.user?.id!;
+
     try {
       const range = (req.query.range as string) || "week";
       const startDate = getStartDate(range);
 
-      // Total Revenue: sum of all OrderItem prices (including discount if exists)
-      const revenueAgg = await prisma.order.aggregate({
-        _sum: {
-          totalAmount: true,
-        },
+      let totalRevenue = 0;
+
+      /** ADMIN → platform revenue */
+      if (role === "ADMIN") {
+        const revenueAgg = await prisma.order.aggregate({
+          _sum: { totalAmount: true },
+          where: { createdAt: { gte: startDate } },
+        });
+
+        totalRevenue = revenueAgg._sum.totalAmount || 0;
+      }
+
+      /** SHOP_OWNER → shop revenue */
+      if (role === "SHOP_OWNER") {
+        const items = await prisma.orderItem.findMany({
+          where: {
+            order: { createdAt: { gte: startDate } },
+            product: {
+              shop: {
+                ownerId: userId,
+              },
+            },
+          },
+          select: {
+            quantity: true,
+            product: {
+              select: {
+                shopPrice: true,
+              },
+            },
+          },
+        });
+
+        totalRevenue = items.reduce((sum, item) => {
+          return sum + item.product.shopPrice * item.quantity;
+        }, 0);
+      }
+
+      const totalOrders = await prisma.order.count({
         where: {
           createdAt: { gte: startDate },
+          ...getShopFilter(userId, role),
         },
       });
 
-      const totalRevenue = revenueAgg._sum.totalAmount || 0;
-
-      // Total Orders
-      const totalOrders = await prisma.order.count({
-        where: { createdAt: { gte: startDate } },
-      });
-
-      // Total Users
       const totalUsers = await prisma.user.count({
         where: { createdAt: { gte: startDate } },
       });
 
-      // Total Products
-      const totalProducts = await prisma.product.count();
+      const totalProducts = await prisma.product.count({
+        where:
+          role === "SHOP_OWNER"
+            ? {
+                shop: {
+                  ownerId: userId,
+                },
+              }
+            : {},
+      });
 
       res.json({
         totalRevenue,
         totalOrders,
         totalUsers,
         totalProducts,
-        revenueGrowth: 10, // placeholder
-        orderGrowth: 5, // placeholder
-        userGrowth: 8, // placeholder
+        revenueGrowth: 10,
+        orderGrowth: 5,
+        userGrowth: 8,
       });
     } catch (err) {
       console.error(err);
@@ -64,20 +118,29 @@ export const DashboardController = {
   },
 
   revenue: async (req: Request, res: Response) => {
+    const filter = getShopFilter(req.user?.id!, req.user?.role!);
+    const role = req.user?.role!;
+
     try {
       const range = (req.query.range as string) || "week";
       const startDate = getStartDate(range);
 
       const orderItems = await prisma.orderItem.findMany({
         where: {
-          order: { createdAt: { gte: startDate } },
+          order: { createdAt: { gte: startDate }, ...filter },
         },
-        include: { order: true },
+        include: {
+          order: true,
+          product: true, // ✅ required
+        },
       });
 
       const result = orderItems.map((item) => ({
         date: item.order.createdAt.toISOString(),
-        revenue: item.discountPrice ?? item.price,
+        revenue:
+          role === "SHOP_OWNER"
+            ? item.product.shopPrice * item.quantity
+            : item.discountPrice ?? item.price,
       }));
 
       res.json(result);
@@ -88,6 +151,8 @@ export const DashboardController = {
   },
 
   orders: async (req: Request, res: Response) => {
+    const filter = getShopFilter(req.user?.id!, req.user?.role!);
+
     try {
       const range = (req.query.range as string) || "week";
       const startDate = getStartDate(range);
@@ -96,7 +161,7 @@ export const DashboardController = {
       const orders = await prisma.order.groupBy({
         by: ["createdAt"],
         _count: { id: true },
-        where: { createdAt: { gte: startDate } },
+        where: { createdAt: { gte: startDate }, ...filter },
       });
 
       const result = orders.map((o) => ({
@@ -139,6 +204,9 @@ export const DashboardController = {
   },
 
   topProducts: async (req: Request, res: Response) => {
+    const role = req.user?.role!;
+    const userId = req.user?.id!;
+
     try {
       const limit = Number(req.query.limit) || 5;
 
@@ -146,6 +214,14 @@ export const DashboardController = {
       const products = await prisma.product.findMany({
         take: limit,
         orderBy: { sold: "desc" },
+        where:
+          role === "SHOP_OWNER"
+            ? {
+                shop: {
+                  ownerId: userId,
+                },
+              }
+            : {},
         include: { category: true },
       });
 
@@ -154,7 +230,10 @@ export const DashboardController = {
         name: p.name,
         category: p.category?.name ?? "Unknown",
         sales: p.sold,
-        revenue: (p.discountPrice ?? p.price) * p.sold,
+        revenue:
+          role === "SHOP_OWNER"
+            ? p.shopPrice * p.sold
+            : (p.discountPrice ?? p.price) * p.sold,
         growth: 0,
       }));
 
@@ -166,23 +245,44 @@ export const DashboardController = {
   },
 
   recentOrders: async (req: Request, res: Response) => {
+    const filter = getShopFilter(req.user?.id!, req.user?.role!);
+    const role = req.user?.role!;
+
     try {
       const limit = Number(req.query.limit) || 5;
 
       const orders = await prisma.order.findMany({
         take: limit,
         orderBy: { createdAt: "desc" },
-        include: { user: true },
+        where: filter,
+        include: {
+          user: true,
+          items: {
+            include: {
+              product: {
+                select: {
+                  shopPrice: true,
+                },
+              },
+            },
+          },
+        },
       });
 
-      const result = orders.map((o) => ({
-        id: o.id,
-        orderNumber: o.id.slice(0, 6).toUpperCase(),
-        customerName: o.user?.name ?? "Unknown",
-        date: o.createdAt.toISOString(),
-        amount: o.totalAmount,
-        status: o.status,
-      }));
+      const result = orders.map((o) => {
+        const shopRevenue = o.items.reduce((sum, item) => {
+          return sum + item.product.shopPrice * item.quantity;
+        }, 0);
+
+        return {
+          id: o.id,
+          orderNumber: o.id.slice(0, 6).toUpperCase(),
+          customerName: o.user?.name ?? "Unknown",
+          date: o.createdAt.toISOString(),
+          amount: role === "SHOP_OWNER" ? shopRevenue : o.totalAmount,
+          status: o.status,
+        };
+      });
 
       res.json(result);
     } catch (err) {
