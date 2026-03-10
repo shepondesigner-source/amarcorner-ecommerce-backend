@@ -313,8 +313,7 @@ export const getOrderListService = async (
   userRole: Role,
   page: number,
   limit: number,
-  search:string | undefined
-
+  search: string | undefined
 ) => {
   const skip = (page - 1) * limit;
 
@@ -339,22 +338,23 @@ export const getOrderListService = async (
     };
   }
   if (search) {
-  whereCondition.user = {
-    OR: [
-      {
-        phone: {
-          contains: search,
+    whereCondition.user = {
+      OR: [
+        {
+          phone: {
+            contains: search,
+          },
         },
-      },
-      {
-        name: {
-          contains: search,
-          mode: "insensitive",
+
+        {
+          name: {
+            contains: search,
+            mode: "insensitive",
+          },
         },
-      },
-    ],
-  };
-}
+      ],
+    };
+  }
 
   // ADMIN → no filter (see all orders)
 
@@ -365,7 +365,7 @@ export const getOrderListService = async (
     prisma.order.findMany({
       where: whereCondition,
       orderBy: {
-        createdAt: "desc",
+        orderNumber: "desc",
       },
       skip,
       take: limit,
@@ -373,6 +373,7 @@ export const getOrderListService = async (
       include: {
         shippingAddress: true, // one order → one shipping address
         payment: true,
+
         items: {
           include: {
             product: {

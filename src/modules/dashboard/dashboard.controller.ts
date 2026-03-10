@@ -24,20 +24,16 @@ export const DashboardController = {
       const startDate = getStartDate(range);
 
       // Total Revenue: sum of all OrderItem prices (including discount if exists)
-      const revenueAgg = await prisma.orderItem.aggregate({
+      const revenueAgg = await prisma.order.aggregate({
         _sum: {
-          discountPrice: true,
-          price: true,
+          totalAmount: true,
         },
         where: {
-          order: {
-            createdAt: { gte: startDate },
-          },
+          createdAt: { gte: startDate },
         },
       });
 
-      const totalRevenue =
-        revenueAgg._sum.discountPrice ?? revenueAgg._sum.price ?? 0;
+      const totalRevenue = revenueAgg._sum.totalAmount || 0;
 
       // Total Orders
       const totalOrders = await prisma.order.count({
