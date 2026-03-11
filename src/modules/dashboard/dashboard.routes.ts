@@ -42,4 +42,10 @@ router.get(
   asyncHandler(DashboardController.recentOrders)
 );
 
+router.get(
+  "/shop-analytic/:shopId",
+  // authenticate,
+  asyncHandler(DashboardController.shopTotalOrderCount)
+);
+
 export default router;

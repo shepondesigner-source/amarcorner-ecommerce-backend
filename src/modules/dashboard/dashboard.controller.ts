@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { prisma } from "../../config/prisma";
+import { OrderStatus } from "../../../generated/prisma";
 const getShopFilter = (userId: string, role: string) => {
   if (role === "SHOP_OWNER") {
     return {
@@ -289,5 +290,393 @@ export const DashboardController = {
       console.error(err);
       res.status(500).json({ error: "Failed to fetch recent orders" });
     }
+  },
+
+  shopTotalOrderCount: async (req: Request, res: Response) => {
+    const { shopId } = req.params;
+
+    // ── 1. BASIC SHOP INFO ───────────────────────────────────────────────────
+    const shop = await prisma.shop.findUnique({
+      where: { id: shopId },
+      include: { owner: { select: { name: true, email: true, phone: true } } },
+    });
+
+    // ── 2. PRODUCT OVERVIEW ──────────────────────────────────────────────────
+    const productStats = await prisma.product.aggregate({
+      where: { shopId },
+      _count: { id: true },
+      _sum: { stock: true, sold: true, shopPrice: true, shopSellPrice: true },
+      _avg: { price: true, rating: true, shopPrice: true, shopSellPrice: true },
+    });
+
+    const activeProducts = await prisma.product.count({
+      where: { shopId, isActive: true },
+    });
+    const outOfStockProducts = await prisma.product.count({
+      where: { shopId, stock: 0 },
+    });
+
+    // ── 3. PRODUCT-WISE ORDERS ───────────────────────────────────────────────
+    // Group OrderItem by product, filtered to this shop
+    const productWiseOrders = await prisma.orderItem.groupBy({
+      by: ["productId"],
+      where: { product: { shopId } },
+      _count: { id: true },
+      _sum: { quantity: true },
+      orderBy: { _count: { id: "desc" } },
+    });
+
+    const productIds = productWiseOrders.map((p) => p.productId);
+
+    // Fetch full product details including shopPrice / shopSellPrice
+    const productDetails = await prisma.product.findMany({
+      where: { id: { in: productIds } },
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        discountPrice: true,
+        shopPrice: true, // ← cost price (what shop paid)
+        shopSellPrice: true, // ← sell price (what shop charges)
+        imageUrls: true,
+        stock: true,
+        sold: true,
+        rating: true,
+        category: { select: { name: true } },
+      },
+    });
+
+    const productMap = Object.fromEntries(productDetails.map((p) => [p.id, p]));
+
+    // Enrich with revenue figures using shopSellPrice
+    const productWiseOrdersEnriched = productWiseOrders.map((item) => {
+      const product = productMap[item.productId];
+      const unitsSold = item._sum.quantity ?? 0;
+      const orderCount = item._count.id;
+
+      // Shop revenue  = shopSellPrice × units sold
+      // Shop cost     = shopPrice     × units sold
+      // Shop profit   = (shopSellPrice - shopPrice) × units sold
+      const shopRevenue = (product?.shopSellPrice ?? 0) * unitsSold;
+      const shopCost = (product?.shopPrice ?? 0) * unitsSold;
+      const shopProfit = shopRevenue - shopCost;
+
+      return {
+        product,
+        orderCount,
+        totalUnitsSold: unitsSold,
+        shopRevenue,
+        shopCost,
+        shopProfit,
+      };
+    });
+
+    // ── 4. SHOP REVENUE (shopSellPrice based, DELIVERED only) ────────────────
+    const deliveredItems = await prisma.orderItem.findMany({
+      where: {
+        product: { shopId },
+        order: { status: OrderStatus.DELIVERED },
+      },
+      select: {
+        quantity: true,
+        product: { select: { shopPrice: true, shopSellPrice: true } },
+      },
+    });
+
+    const totalShopRevenue = deliveredItems.reduce(
+      (sum, i) => sum + (i.product.shopSellPrice ?? 0) * i.quantity,
+      0
+    );
+    const totalShopCost = deliveredItems.reduce(
+      (sum, i) => sum + (i.product.shopPrice ?? 0) * i.quantity,
+      0
+    );
+    const totalShopProfit = totalShopRevenue - totalShopCost;
+
+    // Revenue breakdown by order status — all using shopSellPrice
+    const revenueByStatus = await Promise.all(
+      Object.values(OrderStatus).map(async (status) => {
+        const items = await prisma.orderItem.findMany({
+          where: { product: { shopId }, order: { status } },
+          select: {
+            quantity: true,
+            product: { select: { shopPrice: true, shopSellPrice: true } },
+          },
+        });
+        const revenue = items.reduce(
+          (s, i) => s + (i.product.shopSellPrice ?? 0) * i.quantity,
+          0
+        );
+        const cost = items.reduce(
+          (s, i) => s + (i.product.shopPrice ?? 0) * i.quantity,
+          0
+        );
+        return {
+          status,
+          revenue,
+          cost,
+          profit: revenue - cost,
+          orderCount: items.length,
+        };
+      })
+    );
+
+    // ── 5. MONTHLY REVENUE TREND (last 12 months, shopSellPrice based) ───────
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 11);
+    twelveMonthsAgo.setDate(1);
+    twelveMonthsAgo.setHours(0, 0, 0, 0);
+
+    const monthlyOrderItems = await prisma.orderItem.findMany({
+      where: {
+        product: { shopId },
+        order: {
+          status: OrderStatus.DELIVERED,
+          createdAt: { gte: twelveMonthsAgo },
+        },
+      },
+      select: {
+        quantity: true,
+        product: { select: { shopPrice: true, shopSellPrice: true } },
+        order: { select: { createdAt: true } },
+      },
+    });
+
+    const monthlyRevenue: Record<
+      string,
+      { revenue: number; cost: number; profit: number }
+    > = {};
+    for (const item of monthlyOrderItems) {
+      const key = item.order.createdAt.toISOString().slice(0, 7); // "YYYY-MM"
+      const rev = (item.product.shopSellPrice ?? 0) * item.quantity;
+      const cost = (item.product.shopPrice ?? 0) * item.quantity;
+      if (!monthlyRevenue[key])
+        monthlyRevenue[key] = { revenue: 0, cost: 0, profit: 0 };
+      monthlyRevenue[key].revenue += rev;
+      monthlyRevenue[key].cost += cost;
+      monthlyRevenue[key].profit += rev - cost;
+    }
+
+    // ── 6. ORDER STATUS BREAKDOWN ────────────────────────────────────────────
+    const orderStatusBreakdown = await prisma.order.groupBy({
+      by: ["status"],
+      where: { items: { some: { product: { shopId } } } },
+      _count: { id: true },
+      _sum: { totalAmount: true },
+    });
+
+    // ── 7. TOP SELLING PRODUCTS (by sold count) ──────────────────────────────
+    const topSellingProducts = await prisma.product.findMany({
+      where: { shopId },
+      orderBy: { sold: "desc" },
+      take: 10,
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        discountPrice: true,
+        shopPrice: true,
+        shopSellPrice: true,
+        sold: true,
+        stock: true,
+        rating: true,
+        imageUrls: true,
+        category: { select: { name: true } },
+      },
+    });
+
+    // ── 8. CATEGORY-WISE REVENUE (shopSellPrice) ─────────────────────────────
+    const categoryItems = await prisma.orderItem.findMany({
+      where: { product: { shopId }, order: { status: OrderStatus.DELIVERED } },
+      select: {
+        quantity: true,
+        product: {
+          select: {
+            shopPrice: true,
+            shopSellPrice: true,
+            category: { select: { id: true, name: true } },
+          },
+        },
+      },
+    });
+
+    const categoryMap: Record<
+      string,
+      {
+        name: string;
+        revenue: number;
+        cost: number;
+        profit: number;
+        units: number;
+      }
+    > = {};
+    for (const item of categoryItems) {
+      const cat = item.product.category;
+      const rev = (item.product.shopSellPrice ?? 0) * item.quantity;
+      const cost = (item.product.shopPrice ?? 0) * item.quantity;
+      if (!categoryMap[cat.id])
+        categoryMap[cat.id] = {
+          name: cat.name,
+          revenue: 0,
+          cost: 0,
+          profit: 0,
+          units: 0,
+        };
+      categoryMap[cat.id].revenue += rev;
+      categoryMap[cat.id].cost += cost;
+      categoryMap[cat.id].profit += rev - cost;
+      categoryMap[cat.id].units += item.quantity;
+    }
+
+    // ── 9. PAYMENT METHOD BREAKDOWN ──────────────────────────────────────────
+    const paymentBreakdown = await prisma.payment.groupBy({
+      by: ["method", "status"],
+      where: { order: { items: { some: { product: { shopId } } } } },
+      _count: { id: true },
+      _sum: { amount: true },
+    });
+
+    // ── 10. CUSTOMER ANALYTICS ───────────────────────────────────────────────
+    const uniqueCustomerIds = await prisma.order.findMany({
+      where: {
+        status: OrderStatus.DELIVERED,
+        items: { some: { product: { shopId } } },
+      },
+      select: { userId: true },
+      distinct: ["userId"],
+    });
+    const totalUniqueCustomers = uniqueCustomerIds.length;
+
+    const customerOrderCounts = await prisma.order.groupBy({
+      by: ["userId"],
+      where: { items: { some: { product: { shopId } } } },
+      _count: { id: true },
+      having: { id: { _count: { gt: 1 } } },
+    });
+    const repeatCustomers = customerOrderCounts.length;
+
+    // ── 11. AVERAGE ORDER VALUE ──────────────────────────────────────────────
+    const avgOrderValue = await prisma.order.aggregate({
+      where: {
+        status: OrderStatus.DELIVERED,
+        items: { some: { product: { shopId } } },
+      },
+      _avg: { totalAmount: true },
+      _count: { id: true },
+    });
+
+    // ── 12. REVIEW / RATING ANALYTICS ───────────────────────────────────────
+    const reviewStats = await prisma.review.count({
+      where: { product: { shopId } },
+    });
+    const avgRating = await prisma.product.aggregate({
+      where: { shopId },
+      _avg: { rating: true },
+    });
+
+    // ── 13. OFFER / COUPON PERFORMANCE ──────────────────────────────────────
+    const offerStats = await prisma.offer.findMany({
+      where: { product: { shopId } },
+      select: {
+        couponCode: true,
+        discount: true,
+        usageCount: true,
+        maxUsage: true,
+        isActive: true,
+        expireAt: true,
+        product: { select: { name: true } },
+      },
+      orderBy: { usageCount: "desc" },
+    });
+
+    // ── 14. RECENT ORDERS (last 10) ──────────────────────────────────────────
+    const recentOrders = await prisma.order.findMany({
+      where: { items: { some: { product: { shopId } } } },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+      include: {
+        user: { select: { name: true, phone: true } },
+        items: {
+          where: { product: { shopId } },
+          include: {
+            product: {
+              select: {
+                name: true,
+                imageUrls: true,
+                shopPrice: true,
+                shopSellPrice: true,
+              },
+            },
+          },
+        },
+        payment: true,
+      },
+    });
+
+    // ── 15. INVENTORY ALERTS ─────────────────────────────────────────────────
+    const lowStockProducts = await prisma.product.findMany({
+      where: { shopId, isActive: true, stock: { gt: 0, lte: 5 } },
+      select: { id: true, name: true, stock: true, imageUrls: true },
+      orderBy: { stock: "asc" },
+    });
+
+    // ── RESPONSE ─────────────────────────────────────────────────────────────
+    res.status(200).json({
+      shop,
+
+      products: {
+        total: productStats._count.id,
+        active: activeProducts,
+        outOfStock: outOfStockProducts,
+        totalStock: productStats._sum.stock ?? 0,
+        totalSold: productStats._sum.sold ?? 0,
+        avgPrice: productStats._avg.price ?? 0,
+        avgRating: avgRating._avg.rating ?? 0,
+        totalReviews: reviewStats,
+        // Shop-price aggregates
+        totalShopCostValue: productStats._sum.shopPrice ?? 0, // sum of shopPrice across all products
+        totalShopSellValue: productStats._sum.shopSellPrice ?? 0, // sum of shopSellPrice across all products
+        avgShopPrice: productStats._avg.shopPrice ?? 0,
+        avgShopSellPrice: productStats._avg.shopSellPrice ?? 0,
+      },
+
+      productWiseOrders: productWiseOrdersEnriched, // ← includes shopRevenue, shopCost, shopProfit per product
+      topSellingProducts,
+      lowStockProducts,
+
+      revenue: {
+        // All revenue figures now use shopSellPrice × quantity
+        total: totalShopRevenue,
+        totalCost: totalShopCost,
+        totalProfit: totalShopProfit,
+        profitMargin:
+          totalShopRevenue > 0
+            ? +((totalShopProfit / totalShopRevenue) * 100).toFixed(2)
+            : 0,
+
+        byStatus: revenueByStatus,
+        byCategory: Object.values(categoryMap),
+        monthly: Object.entries(monthlyRevenue)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([month, v]) => ({ month, ...v })),
+      },
+
+      orders: {
+        statusBreakdown: orderStatusBreakdown,
+        avgOrderValue: avgOrderValue._avg.totalAmount ?? 0,
+        totalDeliveredOrders: avgOrderValue._count.id,
+        recentOrders,
+      },
+
+      customers: {
+        totalUnique: totalUniqueCustomers,
+        repeatCustomers,
+        newCustomers: totalUniqueCustomers - repeatCustomers,
+      },
+
+      payments: { breakdown: paymentBreakdown },
+
+      offers: offerStats,
+    });
   },
 };
