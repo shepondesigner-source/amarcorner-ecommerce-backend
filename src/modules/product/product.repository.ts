@@ -34,7 +34,7 @@ export class ProductRepository {
       where,
       skip,
       take,
-      orderBy: { createdAt: "desc" },
+      orderBy: { stock: "desc", createdAt: "desc" },
       include: {
         sizes: true,
         category: true,
