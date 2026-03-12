@@ -34,7 +34,7 @@ export class ProductRepository {
       where,
       skip,
       take,
-      orderBy: { stock: "desc", createdAt: "desc" },
+      orderBy: [{ stock: "desc" }, { createdAt: "desc" }],
       include: {
         sizes: true,
         category: true,
@@ -116,7 +116,7 @@ export class ProductRepository {
         where,
         skip,
         take,
-        orderBy: { [sortBy]: sortOrder },
+        orderBy: [{ stock: "desc" }, { createdAt: "desc" }],
         include: {
           sizes: true,
           category: true,

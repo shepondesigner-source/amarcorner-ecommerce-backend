@@ -61,6 +61,7 @@ export class ProductService {
         select: {
           id: true,
         },
+     
       });
 
       const shopIds = shops.map((s) => s.id);
