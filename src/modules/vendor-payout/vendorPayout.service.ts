@@ -64,4 +64,44 @@ export const VendorPayoutService = {
       where: { id },
     });
   },
+
+  async bulkPay(data: {
+    shopId: string;
+    orderIds: string[];
+    amount: number;
+    adminMessage?: string;
+  }) {
+    const { shopId, orderIds, amount, adminMessage } = data;
+
+    // find payouts
+    const payouts = await prisma.vendorPayout.findMany({
+      where: {
+        shopId,
+        orderId: { in: orderIds },
+        status: VendorPayoutStatus.PENDING,
+      },
+    });
+
+    if (!payouts.length) {
+      throw new Error("No pending payouts found");
+    }
+
+    const payoutIds = payouts.map((p) => p.id);
+
+    await prisma.vendorPayout.updateMany({
+      where: {
+        id: { in: payoutIds },
+      },
+      data: {
+        status: VendorPayoutStatus.PAID,
+        adminMessage,
+        paidAt: new Date(),
+      },
+    });
+
+    return {
+      count: payoutIds.length,
+      amount,
+    };
+  },
 };

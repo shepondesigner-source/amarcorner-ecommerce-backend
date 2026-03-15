@@ -13,5 +13,5 @@ router.get("/:id", asyncHandler(VendorPayoutController.findOne));
 router.patch("/:id/status", asyncHandler(VendorPayoutController.updateStatus));
 
 router.delete("/:id", asyncHandler(VendorPayoutController.delete));
-
+router.post("/bulk-pay", asyncHandler(VendorPayoutController.bulkPay));
 export default router;
