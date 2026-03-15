@@ -17,6 +17,7 @@ export const OrderRepository = {
         items: true,
         shippingAddress: true,
         user: true,
+        vendorPayouts: true,
       },
       orderBy: { createdAt: "desc" },
     }),

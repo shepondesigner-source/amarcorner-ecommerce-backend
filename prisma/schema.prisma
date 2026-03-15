@@ -41,6 +41,12 @@ enum PaymentStatus {
   FAILED
 }
 
+enum VendorPayoutStatus {
+  PENDING
+  PROCESSING
+  PAID
+}
+
 model User {
   id              String            @id @default(cuid())
   name            String
@@ -56,8 +62,10 @@ model User {
   orders          Order[]
   oTPs            oTP[]
   review          Review[]
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  vendorPayouts   VendorPayout[] // ✅ ADD THIS
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([email])
   @@index([role])
@@ -90,7 +98,8 @@ model Shop {
   ownerId       String
   owner         User    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
-  products Product[]
+  products      Product[]
+  vendorPayouts VendorPayout[] // ✅ ADD THIS
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -208,6 +217,7 @@ model Order {
   deliveryCharge    Float           @default(0.00)
   items             OrderItem[]
   payment           Payment?
+  vendorPayouts     VendorPayout[] // ✅ ADD THIS
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -262,6 +272,32 @@ model Payment {
   @@index([txId])
 }
 
+model VendorPayout {
+  id String @id @default(cuid())
+
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  shopId String
+  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  shopOwnerId String
+  shopOwner   User   @relation(fields: [shopOwnerId], references: [id], onDelete: Cascade)
+
+  amount Float
+
+  imageUrl        String?
+  adminMessage    String?
+  shopUserMessage String?
+
+  status VendorPayoutStatus @default(PENDING)
+
+  paidAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Offer {
   id         String   @id @default(cuid())
   couponCode String   @unique
@@ -302,3 +338,5 @@ model Review {
   productId String
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
+
+
