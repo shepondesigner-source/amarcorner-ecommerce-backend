@@ -6,6 +6,7 @@ import {
   updateShop,
   deleteShop,
   getShopsByUser,
+  getAllShop,
 } from "./shop.controller";
 import {
   createShopSchema,
@@ -30,8 +31,9 @@ router.post(
 );
 
 router.get("/", authenticate, validate(getShopsSchema), asyncHandler(getShops));
+router.get("/all-shop", authenticate, asyncHandler(getAllShop));
 
-router.get("/user/:id", asyncHandler(getShopsByUser));
+router.get("/user/:id", authenticate, asyncHandler(getShopsByUser));
 
 router.put(
   "/:id",
@@ -41,6 +43,12 @@ router.put(
   asyncHandler(updateShop),
 );
 
-router.delete("/:id",authenticate, authorize("ADMIN"), validate(deleteShopSchema), asyncHandler(deleteShop));
+router.delete(
+  "/:id",
+  authenticate,
+  authorize("ADMIN"),
+  validate(deleteShopSchema),
+  asyncHandler(deleteShop),
+);
 
 export default router;

@@ -65,43 +65,69 @@ export const VendorPayoutService = {
     });
   },
 
-  async bulkPay(data: {
-    shopId: string;
-    orderIds: string[];
-    amount: number;
-    adminMessage?: string;
-  }) {
-    const { shopId, orderIds, amount, adminMessage } = data;
+async bulkPay(data: {
+  shopId: string;
+  orderIds: string[];
+  amount: number;
+  adminMessage?: string;
+}) {
+  const { shopId, orderIds, adminMessage } = data;
 
-    // find payouts
-    const payouts = await prisma.vendorPayout.findMany({
-      where: {
-        shopId,
-        orderId: { in: orderIds },
-        status: VendorPayoutStatus.PENDING,
+  // get shop owner
+  const shop = await prisma.shop.findUnique({
+    where: { id: shopId },
+    select: { ownerId: true },
+  });
+
+  if (!shop) {
+    throw new Error("Shop not found");
+  }
+
+  // get orders
+  const orders = await prisma.order.findMany({
+    where: {
+      id: { in: orderIds },
+    },
+    include: {
+      items: {
+        include: {
+          product: true,
+        },
       },
-    });
+    },
+  });
 
-    if (!payouts.length) {
-      throw new Error("No pending payouts found");
-    }
+  if (!orders.length) {
+    throw new Error("Orders not found");
+  }
 
-    const payoutIds = payouts.map((p) => p.id);
+  const payoutData = orders.map((order) => {
+    let orderAmount = 0;
 
-    await prisma.vendorPayout.updateMany({
-      where: {
-        id: { in: payoutIds },
-      },
-      data: {
-        status: VendorPayoutStatus.PAID,
-        adminMessage,
-        paidAt: new Date(),
-      },
+    order.items.forEach((item) => {
+      orderAmount += item.product.shopPrice * item.quantity;
     });
 
     return {
-      count: payoutIds.length,
-      amount,
+      shopId,
+      shopOwnerId: shop.ownerId,
+      orderId: order.id,
+      amount: orderAmount,
+      status: "PAID" as const,
+      adminMessage,
+      paidAt: new Date(),
     };
-  },
+  });
+
+  const result = await prisma.vendorPayout.createMany({
+    data: payoutData,
+  });
+
+  const totalAmount = payoutData.reduce((sum, p) => sum + p.amount, 0);
+
+  return {
+    count: result.count,
+    amount: totalAmount,
+  };
+}
 };

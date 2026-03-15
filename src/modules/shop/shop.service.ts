@@ -1,4 +1,5 @@
 import { Role } from "../../../generated/prisma";
+import { prisma } from "../../config/prisma";
 import {
   deleteFromCloudinaryByUrl,
   uploadToCloudinary,
@@ -51,6 +52,29 @@ export class ShopService {
         limit,
         totalPages: Math.ceil(total / limit),
       },
+    };
+  }
+
+  async allShop() {
+    const shops = await prisma.shop.findMany({
+      select: {
+        id: true,
+        name: true,
+        imageUrl: true,
+        owner: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: {
+        name: "asc",
+      },
+    });
+
+    return {
+      shops,
     };
   }
 

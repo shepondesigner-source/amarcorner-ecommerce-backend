@@ -21,27 +21,27 @@ export const VendorPayoutController = {
   },
 
   async bulkPay(req: Request, res: Response) {
-        const { shopId, orderIds, amount, adminMessage } = req.body;
-    
-        const result = await VendorPayoutService.bulkPay({
-          shopId,
-          orderIds,
-          amount,
-          adminMessage,
-        });
-    
-        res.json({
-          success: true,
-          message: "Bulk payout completed",
-          ...result,
-        });
-      },
+    const { shopId, orderIds, amount, adminMessage } = req.body;
+
+    const result = await VendorPayoutService.bulkPay({
+      shopId,
+      orderIds,
+      amount,
+      adminMessage,
+    });
+
+    res.json({
+      success: true,
+      message: "Bulk payout completed",
+      ...result,
+    });
+  },
 
   findAll: async (req: Request, res: Response) => {
     try {
       const payouts = await VendorPayoutService.findAll(
         req.user?.id!,
-        req.user?.role!
+        req.user?.role!,
       );
 
       res.json(payouts);
@@ -71,7 +71,7 @@ export const VendorPayoutController = {
       const payout = await VendorPayoutService.updateStatus(
         req.params.id,
         status as VendorPayoutStatus,
-        adminMessage
+        adminMessage,
       );
 
       res.json(payout);

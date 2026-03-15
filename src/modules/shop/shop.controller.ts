@@ -19,6 +19,10 @@ export const getShops = async (req: Request, res: Response) => {
   const result = await service.findPaginated(req.query, user);
   res.json(result);
 };
+export const getAllShop = async (req: Request, res: Response) => {
+  const result = await service.allShop();
+  res.json(result);
+};
 
 export const getShopsByUser = async (req: Request, res: Response) => {
   const userId = req.params.userId;
