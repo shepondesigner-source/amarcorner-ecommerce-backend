@@ -15,7 +15,7 @@ import {
   updateOrderAmountService,
   updateOrderService,
 } from "./order.service";
-import { Role } from "../../../generated/prisma";
+import { Role, VendorPayoutStatus } from "../../../generated/prisma";
 import { body } from "express-validator";
 
 export const createOrderController = async (req: Request, res: Response) => {
@@ -56,23 +56,47 @@ export const createOrderControllerOpen = async (
 };
 
 export const getOrderListController = async (req: Request, res: Response) => {
-  const parsed = getOrderListSchema.parse({
-    query: req.query,
-  });
+  try {
+    const userId = req?.user?.id || "";
+    const userRole = req?.user?.role as Role;
 
-  const userId = req?.user?.id || "";
-  const userRole = req?.user?.role as Role;
+    const page = Number(req.query.page ?? 1);
+    const limit = Number(req.query.limit ?? 10);
 
-  const page = Number(parsed.query.page ?? 1);
-  const limit = Number(parsed.query.limit ?? 10);
-  const search = parsed.query.search;
+    const search = req.query.search as string | undefined;
+    const shopId = req.query.shopId as string | undefined;
 
-  const result = await getOrderListService(userId, userRole, page, limit,search);
+    const vendorPayoutStatus = req.query.vendorPayoutStatus as
+      | VendorPayoutStatus
+      | undefined;
 
-  res.status(200).json({
-    message: "Order list fetched successfully",
-    ...result,
-  });
+    const excludePaidVendorPayment =
+      req.query.excludePaidVendorPayment === "true";
+
+    const result = await getOrderListService(
+      userId,
+      userRole,
+      page,
+      limit,
+      search,
+      shopId,
+      vendorPayoutStatus,
+      excludePaidVendorPayment
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Order list fetched successfully",
+      ...result,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch order list",
+    });
+  }
 };
 
 export const getOpenOrderController = async (req: Request, res: Response) => {
@@ -110,13 +134,14 @@ export const updateOrderController = async (req: Request, res: Response) => {
   });
 };
 
-
-export const updateOrderPriceController = async (req: Request, res: Response) => {
+export const updateOrderPriceController = async (
+  req: Request,
+  res: Response
+) => {
   const parsed = updateOrderAmountSchema.parse({
     params: req.params,
     body: req.body,
   });
-
 
   const order = await updateOrderAmountService(
     parsed.params.id,

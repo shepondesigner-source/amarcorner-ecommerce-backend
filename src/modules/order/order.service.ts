@@ -1,4 +1,4 @@
-import { Role } from "../../../generated/prisma";
+import { Prisma, Role, VendorPayoutStatus } from "../../../generated/prisma";
 import { prisma } from "../../config/prisma";
 import { AppError } from "../../core/errors/AppError";
 
@@ -46,7 +46,7 @@ type CreateOrderInput = {
 
 export const createOrderService = async (
   userId: string,
-  data: CreateOrderInput,
+  data: CreateOrderInput
 ) => {
   /** 1️⃣ Get default shipping address */
   const shippingAddress = await prisma.shippingAddress.findFirst({
@@ -313,54 +313,89 @@ export const getOrderListService = async (
   userRole: Role,
   page: number,
   limit: number,
-  search: string | undefined,
+  search?: string,
+  shopId?: string,
+  vendorPayoutStatus?: VendorPayoutStatus,
+  excludePaidVendorPayment?: boolean
 ) => {
   const skip = (page - 1) * limit;
 
-  /** -----------------------------
-   * WHERE condition by role
-   * ----------------------------- */
-  let whereCondition: any = {};
+  /** --------------------------------
+   * Build dynamic where condition
+   * -------------------------------- */
 
-  if (userRole === "USER") {
-    whereCondition.userId = userId;
-  }
+  const whereCondition: Prisma.OrderWhereInput = {
+    /** USER only see own orders */
+    ...(userRole === "USER" && {
+      userId,
+    }),
 
-  if (userRole === "SHOP_OWNER") {
-    whereCondition.items = {
-      some: {
-        product: {
-          shop: {
-            ownerId: userId, // 🔑 product belongs to shop owner
+    /** SHOP_OWNER only see own shop orders */
+    ...(userRole === "SHOP_OWNER" && {
+      items: {
+        some: {
+          product: {
+            shop: {
+              ownerId: userId,
+            },
           },
         },
       },
-    };
-  }
-  if (search) {
-    whereCondition.user = {
-      OR: [
-        {
-          phone: {
-            contains: search,
+    }),
+
+    /** Search by name or phone */
+    ...(search && {
+      user: {
+        OR: [
+          {
+            phone: {
+              contains: search,
+            },
+          },
+          {
+            name: {
+              contains: search,
+              mode: "insensitive",
+            },
+          },
+        ],
+      },
+    }),
+
+    /** Filter by shop */
+    ...(shopId && {
+      items: {
+        some: {
+          product: {
+            shopId,
           },
         },
+      },
+    }),
 
-        {
-          name: {
-            contains: search,
-            mode: "insensitive",
-          },
+    /** Filter by vendor payout status */
+    ...(vendorPayoutStatus && {
+      vendorPayouts: {
+        some: {
+          status: vendorPayoutStatus,
         },
-      ],
-    };
-  }
+      },
+    }),
 
-  // ADMIN → no filter (see all orders)
+    /** Exclude paid vendor payout */
+    ...(excludePaidVendorPayment && {
+      vendorPayouts: {
+        none: {
+          status: "PAID",
+        },
+      },
+    }),
+  };
 
-  /** -----------------------------
+  /** --------------------------------
    * Query
-   * ----------------------------- */
+   * -------------------------------- */
+
   const [orders, total] = await Promise.all([
     prisma.order.findMany({
       where: whereCondition,
@@ -371,11 +406,14 @@ export const getOrderListService = async (
       take: limit,
 
       include: {
-        shippingAddress: true, // one order → one shipping address
+        shippingAddress: true,
         payment: true,
+
         vendorPayouts: {
           select: {
             status: true,
+            amount: true,
+            shopId: true,
           },
         },
 
@@ -390,6 +428,7 @@ export const getOrderListService = async (
                 shopPrice: true,
               },
             },
+
             size: {
               select: {
                 id: true,
@@ -421,7 +460,7 @@ export const updateOrderService = async (
   orderId: string,
   userId: string,
   role: Role,
-  payload: any,
+  payload: any
 ) => {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
@@ -501,7 +540,7 @@ export const updateOrderService = async (
 
 export const updateOrderAmountService = async (
   orderId: string,
-  amount: number,
+  amount: number
 ) => {
   /* ================= ADMIN ================= */
   return prisma.order.update({
