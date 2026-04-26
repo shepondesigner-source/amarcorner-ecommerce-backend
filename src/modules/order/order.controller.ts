@@ -164,5 +164,5 @@ export const deleteOrderController = async (req: Request, res: Response) => {
 export const pathaoOrderController = async (req: Request, res: Response) => {
   const order = await createPathaoOrder(req.body.id);
 
-  res.status(200).json(order);
+  res.status(200).json({ message: "Pathao order created successfully" });
 };
