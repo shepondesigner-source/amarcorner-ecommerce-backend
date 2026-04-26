@@ -1,9 +1,5 @@
 import { Router } from "express";
-import {
-  createOrderSchema,
-  updateOrderAmountSchema,
-  updateOrderSchema,
-} from "./order.schema";
+import { updateOrderAmountSchema, updateOrderSchema } from "./order.schema";
 import { authenticate } from "../../core/middlewares/auth.middleware";
 import { authorize } from "../../core/middlewares/authorize.middleware";
 import { asyncHandler } from "../../core/utils/asyncHandler";
@@ -14,10 +10,10 @@ import {
   deleteOrderController,
   getOpenOrderController,
   getOrderListController,
+  pathaoOrderController,
   updateOrderController,
   updateOrderPriceController,
 } from "./order.controller";
-import { updateOrderAmountService } from "./order.service";
 
 const router = Router();
 
@@ -32,7 +28,7 @@ router.post(
 );
 
 router.post("/user", asyncHandler(createOrderControllerOpen));
-
+router.post("/pathao", asyncHandler(pathaoOrderController));
 router.get("/", authenticate, asyncHandler(getOrderListController));
 router.get("/:id", asyncHandler(getOpenOrderController));
 router.put(

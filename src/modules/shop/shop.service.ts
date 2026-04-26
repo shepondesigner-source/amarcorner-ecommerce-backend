@@ -61,6 +61,7 @@ export class ShopService {
         id: true,
         name: true,
         imageUrl: true,
+        pathaoId: true,
         owner: {
           select: {
             id: true,

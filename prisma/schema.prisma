@@ -21,7 +21,12 @@ enum OrderStatus {
   CANCELLED
 }
 
-enum OtpPurpose {onRefresh
+enum PathaoStatus {
+  PLACED
+  UNPLACED
+}
+
+enum OtpPurpose {
   LOGIN
   REGISTER
   PASSWORD_RESET
@@ -98,6 +103,7 @@ model Shop {
   ownerId       String
   owner         User    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
+  pathaoId      String?
   products      Product[]
   vendorPayouts VendorPayout[] // ✅ ADD THIS
 
@@ -158,7 +164,7 @@ model Size {
   createdAt DateTime @default(now())
 }
 
-model Product {
+model Product {excludePaidVendorPayment
   id            String  @id @default(cuid())
   name          String
   description   String  @db.Text
@@ -175,8 +181,6 @@ model Product {
   imageUrls String[] // ✅ multiple images
 
   sizes Size[] // ✅ from Size table (implicit M2M)
-
-  
 
   shopId String
   shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
@@ -209,8 +213,9 @@ model Order {
   userId      String
   user        User   @relation(fields: [userId], references: [id], onDelete: Restrict)
 
-  status      OrderStatus @default(PENDING)
-  totalAmount Float
+  status       OrderStatus  @default(PENDING)
+  pathaoStatus PathaoStatus @default(UNPLACED)
+  totalAmount  Float
 
   comment String?
 
@@ -340,5 +345,3 @@ model Review {
   productId String
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
-
-

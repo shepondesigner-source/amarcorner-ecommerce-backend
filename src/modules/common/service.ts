@@ -17,7 +17,10 @@
 //   },
 // };
 
+import axios from "axios";
 import { resend } from "../../config/mail";
+import { getPathaoToken } from "../../core/service/pathao.service";
+import { prisma } from "../../config/prisma";
 
 type SendMailOptions = {
   to: string;
@@ -48,3 +51,51 @@ export async function sendOtp(email: string, otp: string) {
     }),
   });
 }
+
+export const createPathaoOrder = async (orderId: any) => {
+  const token = await getPathaoToken();
+  const order = await prisma.order.findFirst({
+    where: { id: orderId },
+    include: {
+      user: true,
+      items: {
+        include: {
+          product: true,
+        },
+      },
+    },
+  });
+
+  const res = await axios.post(
+    `${process.env.PATHAO_BASE_URL}/aladdin/api/v1/orders`,
+    {
+      store_id: order?.items[0].product.shopId,
+      merchant_order_id: order?.id,
+      recipient_name: order?.user.name,
+      recipient_phone: order?.user.phone,
+      recipient_address: order?.user.address,
+      amount_to_collect: order?.totalAmount,
+      item_description: "Ecommerce Product",
+      item_quantity: 1,
+      item_weight: 0.5,
+      item_type: 2,
+      delivery_type: 48,
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+    },
+  );
+
+  const updateOrder = await prisma.order.update({
+    where: { id: orderId },
+    data: {
+      pathaoStatus: "PLACED",
+      status: "SHIPPED",
+    },
+  });
+
+  return res.data;
+};

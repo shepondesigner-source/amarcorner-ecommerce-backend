@@ -17,6 +17,7 @@ import {
 } from "./order.service";
 import { Role, VendorPayoutStatus } from "../../../generated/prisma";
 import { body } from "express-validator";
+import { createPathaoOrder } from "../common/service";
 
 export const createOrderController = async (req: Request, res: Response) => {
   const parsed = createOrderSchema.parse({
@@ -35,7 +36,7 @@ export const createOrderController = async (req: Request, res: Response) => {
 
 export const createOrderControllerOpen = async (
   req: Request,
-  res: Response
+  res: Response,
 ) => {
   // const parsed = createOrderSchema.parse({
   //   body: req.body,
@@ -81,7 +82,7 @@ export const getOrderListController = async (req: Request, res: Response) => {
       search,
       shopId,
       vendorPayoutStatus,
-      excludePaidVendorPayment
+      excludePaidVendorPayment,
     );
 
     res.status(200).json({
@@ -125,7 +126,7 @@ export const updateOrderController = async (req: Request, res: Response) => {
     parsed.params.id,
     userId,
     role,
-    parsed.body
+    parsed.body,
   );
 
   res.status(200).json({
@@ -136,7 +137,7 @@ export const updateOrderController = async (req: Request, res: Response) => {
 
 export const updateOrderPriceController = async (
   req: Request,
-  res: Response
+  res: Response,
 ) => {
   const parsed = updateOrderAmountSchema.parse({
     params: req.params,
@@ -145,7 +146,7 @@ export const updateOrderPriceController = async (
 
   const order = await updateOrderAmountService(
     parsed.params.id,
-    parsed.body.totalAmount
+    parsed.body.totalAmount,
   );
 
   res.status(200).json({
@@ -156,6 +157,12 @@ export const updateOrderPriceController = async (
 
 export const deleteOrderController = async (req: Request, res: Response) => {
   const order = await deleteOrderService(req.params.id);
+
+  res.status(200).json(order);
+};
+
+export const pathaoOrderController = async (req: Request, res: Response) => {
+  const order = await createPathaoOrder(req.body.id);
 
   res.status(200).json(order);
 };
