@@ -3,6 +3,8 @@
 import express, { Application } from "express";
 import cors from "cors";
 import helmet from "helmet";
+import { rateLimit } from "express-rate-limit";
+
 import { config } from "./config/env";
 import routes from "./routes";
 import { errorHandler } from "./core/errors/errorHandler";
@@ -10,9 +12,20 @@ import { errorHandler } from "./core/errors/errorHandler";
 const app: Application = express();
 const allowedOrigins = config.frontendUrl.split(",");
 // example: FRONTEND_URL=http://localhost:3000,https://yourdomain.com
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 min
+  max: 100, // max requests per IP
+  standardHeaders: true,
+  legacyHeaders: false,
 
+  message: {
+    success: false,
+    message: "Too many requests, please try again later.",
+  },
+});
 // Security middleware
 app.use(helmet());
+app.use(limiter);
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -25,9 +38,8 @@ app.use(
       return callback(new Error("CORS blocked"));
     },
     credentials: true,
-  })
+  }),
 );
-
 
 // Body parsing middleware
 app.use(express.json());
