@@ -44,15 +44,17 @@ export const DashboardController = {
       const startDate = getStartDate(range);
 
       let totalRevenue = 0;
+      let totalCharge = 0;
 
       /** ADMIN → platform revenue */
       if (role === "ADMIN") {
         const revenueAgg = await prisma.order.aggregate({
-          _sum: { totalAmount: true },
+          _sum: { totalAmount: true, deliveryCharge: true },
           where: { createdAt: { gte: startDate } },
         });
 
         totalRevenue = revenueAgg._sum.totalAmount || 0;
+        totalCharge = revenueAgg._sum.deliveryCharge || 0;
       }
 
       /** SHOP_OWNER → shop revenue */
@@ -102,7 +104,7 @@ export const DashboardController = {
               }
             : {},
       });
-
+      totalRevenue = totalRevenue - totalCharge;
       res.json({
         totalRevenue,
         totalOrders,
@@ -141,7 +143,7 @@ export const DashboardController = {
         revenue:
           role === "SHOP_OWNER"
             ? item.product.shopPrice * item.quantity
-            : item.discountPrice ?? item.price,
+            : (item.discountPrice ?? item.price),
       }));
 
       res.json(result);
@@ -385,11 +387,11 @@ export const DashboardController = {
 
     const totalShopRevenue = deliveredItems.reduce(
       (sum, i) => sum + (i.product.shopSellPrice ?? 0) * i.quantity,
-      0
+      0,
     );
     const totalShopCost = deliveredItems.reduce(
       (sum, i) => sum + (i.product.shopPrice ?? 0) * i.quantity,
-      0
+      0,
     );
     const totalShopProfit = totalShopRevenue - totalShopCost;
 
@@ -405,11 +407,11 @@ export const DashboardController = {
         });
         const revenue = items.reduce(
           (s, i) => s + (i.product.shopSellPrice ?? 0) * i.quantity,
-          0
+          0,
         );
         const cost = items.reduce(
           (s, i) => s + (i.product.shopPrice ?? 0) * i.quantity,
-          0
+          0,
         );
         return {
           status,
@@ -418,7 +420,7 @@ export const DashboardController = {
           profit: revenue - cost,
           orderCount: items.length,
         };
-      })
+      }),
     );
 
     // ── 5. MONTHLY REVENUE TREND (last 12 months, shopSellPrice based) ───────

@@ -21,7 +21,7 @@ enum OrderStatus {
   CANCELLED
 }
 
-enum OtpPurpose {
+enum OtpPurpose {onRefresh
   LOGIN
   REGISTER
   PASSWORD_RESET
@@ -175,6 +175,8 @@ model Product {
   imageUrls String[] // ✅ multiple images
 
   sizes Size[] // ✅ from Size table (implicit M2M)
+
+  
 
   shopId String
   shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
