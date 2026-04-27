@@ -58,22 +58,26 @@ export const createPathaoOrder = async (orderId: any) => {
     where: { id: orderId },
     include: {
       user: true,
+      shippingAddress: true,
       items: {
         include: {
-          product: true,
+          product: {
+            include: {
+              shop: true,
+            },
+          },
         },
       },
     },
   });
-
   const res = await axios.post(
     `${process.env.PATHAO_BASE_URL}/aladdin/api/v1/orders`,
     {
-      store_id: order?.items[0].product.shopId,
-      merchant_order_id: order?.id,
+      store_id: order?.items[0].product.shop.pathaoId,
+      merchant_order_id: `ORD-0000${order?.orderNumber}`,
       recipient_name: order?.user.name,
       recipient_phone: order?.user.phone,
-      recipient_address: order?.user.address,
+      recipient_address: order?.shippingAddress.address,
       amount_to_collect: order?.totalAmount,
       item_description: "Ecommerce Product",
       item_quantity: 1,
@@ -88,7 +92,6 @@ export const createPathaoOrder = async (orderId: any) => {
       },
     },
   );
-
   const updateOrder = await prisma.order.update({
     where: { id: orderId },
     data: {
