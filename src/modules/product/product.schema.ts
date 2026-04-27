@@ -64,9 +64,13 @@ export const updateProductSchema = z.object({
 
     keywords: z.string().optional(),
     slug: z.string().optional(),
-    isActive: z.coerce.boolean().optional(),
-    isFeatured: z.coerce.boolean().optional(),
+    isActive: z
+      .preprocess((val) => val === "true" || val === true, z.boolean())
+      .optional(),
 
+    isFeatured: z
+      .preprocess((val) => val === "true" || val === true, z.boolean())
+      .optional(),
     existingImageUrls: z
       .string()
       .optional()

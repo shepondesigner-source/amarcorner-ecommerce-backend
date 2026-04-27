@@ -164,7 +164,8 @@ export class ProductRepository {
     const [items, total] = await prisma.$transaction([
       prisma.product.findMany({
         where: {
-          AND: [{ isFeatured: false }, { isActive: true }],
+          isFeatured: true,
+          isActive: true,
         },
         select: {
           id: true,

@@ -61,7 +61,6 @@ export class ProductService {
         select: {
           id: true,
         },
-     
       });
 
       const shopIds = shops.map((s) => s.id);
@@ -221,6 +220,7 @@ export class ProductService {
   }
 
   async update(id: string, data: any, files: Express.Multer.File[]) {
+    console.log(data);
     const product = await this.repo.findById(id);
     if (!product) throw new Error("Product not found");
 
@@ -231,7 +231,7 @@ export class ProductService {
 
     /* ---------- 2. Images to delete ---------- */
     const imagesToDelete = product.imageUrls.filter(
-      (img) => !keepImages.includes(img)
+      (img) => !keepImages.includes(img),
     );
 
     for (const img of imagesToDelete) {

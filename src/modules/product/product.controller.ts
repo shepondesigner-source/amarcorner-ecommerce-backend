@@ -24,7 +24,7 @@ export const getProducts = async (req: Request, res: Response) => {
 
 export const updateProduct = async (req: Request, res: Response) => {
   const files = Array.isArray(req.files) ? req.files : [];
-
+  console.log(req.body);
   const product = await service.update(req.params.id, req.body, files);
   res.json(product);
 };
@@ -41,7 +41,7 @@ export const getFeaturedProduct = async (req: Request, res: Response) => {
 
 export const getdProductDeliveryCharge = async (
   req: Request,
-  res: Response
+  res: Response,
 ) => {
   const userId = req.user?.id;
   if (userId) {
@@ -51,7 +51,7 @@ export const getdProductDeliveryCharge = async (
 };
 export const getdProductDeliveryChargeOpen = async (
   req: Request,
-  res: Response
+  res: Response,
 ) => {
   const { district } = req.body;
   if (district) {
@@ -83,7 +83,7 @@ export const getProductsBySlug = async (req: Request, res: Response) => {
   const result = await service.getbySlug(
     slug as string,
     pageNumber,
-    limitNumber
+    limitNumber,
   );
 
   return res.json(result);
