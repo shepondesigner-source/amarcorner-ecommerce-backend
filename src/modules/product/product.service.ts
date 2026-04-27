@@ -104,8 +104,7 @@ export class ProductService {
           : [query.sizeIds]
         : undefined,
 
-      isActive:
-        query.isActive !== undefined ? query.isActive === "true" : undefined,
+      isActive: query.isActive === "yes" ? true : undefined,
 
       sortBy: query.sortBy || "createdAt",
       sortOrder: query.sortOrder === "asc" ? "asc" : "desc",
