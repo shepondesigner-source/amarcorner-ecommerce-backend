@@ -8,14 +8,16 @@ export const create = asyncHandler<Request>(
     const category = await service.createCategory(
       req.body,
       req.files?.["icon"]?.[0],
-      req.files?.["image"]?.[0]
+      req.files?.["image"]?.[0],
     );
     res.json(new ApiResponse("Category created", category));
-  }
+  },
 );
 
-export const findAll = asyncHandler(async (_req: Request, res: Response) => {
-  const categories = await service.getCategories();
+export const findAll = asyncHandler(async (req: Request, res: Response) => {
+  const categories = await service.getCategories({
+    isActive: req.query.isActive as string,
+  });
   res.json(new ApiResponse("Category list", categories));
 });
 
@@ -29,7 +31,7 @@ export const update = asyncHandler(async (req: Request, res: Response) => {
     req.params.id,
     req.body,
     req.files?.["icon"]?.[0],
-    req.files?.["image"]?.[0]
+    req.files?.["image"]?.[0],
   );
   res.json(new ApiResponse("Category updated", category));
 });

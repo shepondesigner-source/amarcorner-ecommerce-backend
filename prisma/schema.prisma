@@ -130,6 +130,7 @@ model Category {
   name     String
   iconUrl  String?
   imageUrl String?
+  isActive Boolean @default(true)
 
   subCategories SubCategory[]
   products      Product[]
@@ -164,7 +165,7 @@ model Size {
   createdAt DateTime @default(now())
 }
 
-model Product {excludePaidVendorPayment
+model Product {
   id            String  @id @default(cuid())
   name          String
   description   String  @db.Text

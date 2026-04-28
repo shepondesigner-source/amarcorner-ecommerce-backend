@@ -4,7 +4,17 @@ export const create = (data: any) => {
   return prisma.category.create({ data });
 };
 
-export const findAll = () => {
+export const findAll = (options: { isActive?: string }) => {
+  if (options.isActive === "yes") {
+    return prisma.category.findMany({
+      where: {
+        isActive: true,
+      },
+      include: {
+        subCategories: true,
+      },
+    });
+  }
   return prisma.category.findMany({
     include: {
       subCategories: true,

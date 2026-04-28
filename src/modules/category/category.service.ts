@@ -24,8 +24,8 @@ export const createCategory = async (
   });
 };
 
-export const getCategories = async () => {
-  return repo.findAll();
+export const getCategories = async (options: { isActive: string }) => {
+  return repo.findAll(options);
 };
 
 export const getCategoryById = async (id: string) => {
