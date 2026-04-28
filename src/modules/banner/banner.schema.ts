@@ -4,7 +4,9 @@ export const createBannerSchema = z.object({
   body: z.object({
     title: z.string().min(1),
     slug: z.string().optional(),
-    isActive: z.coerce.boolean().default(true),
+    isActive: z
+      .preprocess((val) => val === "true" || val === true, z.boolean())
+      .default(true),
     order: z.coerce.number().int().nonnegative(),
   }),
 });
@@ -16,7 +18,9 @@ export const updateBannerSchema = z.object({
   body: z.object({
     title: z.string().min(1).optional(),
     slug: z.string().optional(),
-    isActive: z.coerce.boolean().optional(),
+    isActive: z
+      .preprocess((val) => val === "true" || val === true, z.boolean())
+      .optional(),
     order: z.coerce.number().int().nonnegative(),
   }),
 });
