@@ -14,6 +14,7 @@ export const VendorPayoutService = {
   },
 
   async findAll(userId: string, role: Role) {
+    console.log(role);
     const where =
       role === "SHOP_OWNER"
         ? {
@@ -47,7 +48,7 @@ export const VendorPayoutService = {
   async updateStatus(
     id: string,
     status: VendorPayoutStatus,
-    adminMessage?: string
+    adminMessage?: string,
   ) {
     return prisma.vendorPayout.update({
       where: { id },
@@ -65,69 +66,69 @@ export const VendorPayoutService = {
     });
   },
 
-async bulkPay(data: {
-  shopId: string;
-  orderIds: string[];
-  amount: number;
-  adminMessage?: string;
-}) {
-  const { shopId, orderIds, adminMessage } = data;
+  async bulkPay(data: {
+    shopId: string;
+    orderIds: string[];
+    amount: number;
+    adminMessage?: string;
+  }) {
+    const { shopId, orderIds, adminMessage } = data;
 
-  // get shop owner
-  const shop = await prisma.shop.findUnique({
-    where: { id: shopId },
-    select: { ownerId: true },
-  });
-
-  if (!shop) {
-    throw new Error("Shop not found");
-  }
-
-  // get orders
-  const orders = await prisma.order.findMany({
-    where: {
-      id: { in: orderIds },
-    },
-    include: {
-      items: {
-        include: {
-          product: true,
-        },
-      },
-    },
-  });
-
-  if (!orders.length) {
-    throw new Error("Orders not found");
-  }
-
-  const payoutData = orders.map((order) => {
-    let orderAmount = 0;
-
-    order.items.forEach((item) => {
-      orderAmount += item.product.shopPrice * item.quantity;
+    // get shop owner
+    const shop = await prisma.shop.findUnique({
+      where: { id: shopId },
+      select: { ownerId: true },
     });
 
+    if (!shop) {
+      throw new Error("Shop not found");
+    }
+
+    // get orders
+    const orders = await prisma.order.findMany({
+      where: {
+        id: { in: orderIds },
+      },
+      include: {
+        items: {
+          include: {
+            product: true,
+          },
+        },
+      },
+    });
+
+    if (!orders.length) {
+      throw new Error("Orders not found");
+    }
+
+    const payoutData = orders.map((order) => {
+      let orderAmount = 0;
+
+      order.items.forEach((item) => {
+        orderAmount += item.product.shopPrice * item.quantity;
+      });
+
+      return {
+        shopId,
+        shopOwnerId: shop.ownerId,
+        orderId: order.id,
+        amount: orderAmount,
+        status: "PAID" as const,
+        adminMessage,
+        paidAt: new Date(),
+      };
+    });
+
+    const result = await prisma.vendorPayout.createMany({
+      data: payoutData,
+    });
+
+    const totalAmount = payoutData.reduce((sum, p) => sum + p.amount, 0);
+
     return {
-      shopId,
-      shopOwnerId: shop.ownerId,
-      orderId: order.id,
-      amount: orderAmount,
-      status: "PAID" as const,
-      adminMessage,
-      paidAt: new Date(),
+      count: result.count,
+      amount: totalAmount,
     };
-  });
-
-  const result = await prisma.vendorPayout.createMany({
-    data: payoutData,
-  });
-
-  const totalAmount = payoutData.reduce((sum, p) => sum + p.amount, 0);
-
-  return {
-    count: result.count,
-    amount: totalAmount,
-  };
-}
+  },
 };

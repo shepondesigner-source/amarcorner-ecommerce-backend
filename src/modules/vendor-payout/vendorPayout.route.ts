@@ -1,12 +1,19 @@
 import { Router } from "express";
 import { VendorPayoutController } from "./vendorPayout.controller";
 import { asyncHandler } from "../../core/utils/asyncHandler";
+import { authenticate } from "../../core/middlewares/auth.middleware";
+import { authorize } from "../../core/middlewares/authorize.middleware";
 
 const router = Router();
 
-router.post("/", asyncHandler(VendorPayoutController.create));
+router.post(
+  "/",
+  authenticate,
+  authorize("ADMIN"),
+  asyncHandler(VendorPayoutController.create),
+);
 
-router.get("/", asyncHandler(VendorPayoutController.findAll));
+router.get("/", authenticate, asyncHandler(VendorPayoutController.findAll));
 
 router.get("/:id", asyncHandler(VendorPayoutController.findOne));
 

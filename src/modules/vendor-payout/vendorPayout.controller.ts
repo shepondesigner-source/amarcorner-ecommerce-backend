@@ -38,6 +38,7 @@ export const VendorPayoutController = {
   },
 
   findAll: async (req: Request, res: Response) => {
+    console.log(req?.user);
     try {
       const payouts = await VendorPayoutService.findAll(
         req.user?.id!,

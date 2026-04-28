@@ -32,8 +32,24 @@ const getDateRange = (
 
   // Default: last 7 days
   const now = new Date();
-  const endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-  const startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7, 0, 0, 0, 0);
+  const endDate = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+    23,
+    59,
+    59,
+    999,
+  );
+  const startDate = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate() - 7,
+    0,
+    0,
+    0,
+    0,
+  );
   return { startDate, endDate };
 };
 
@@ -42,7 +58,9 @@ export const DashboardController = {
     try {
       const role = req.user?.role!;
       const userId = req.user?.id!;
-      const { startDate, endDate } = getDateRange(req.query as Record<string, unknown>);
+      const { startDate, endDate } = getDateRange(
+        req.query as Record<string, unknown>,
+      );
 
       // -----------------------------------
       // ADMIN DASHBOARD
@@ -71,7 +89,10 @@ export const DashboardController = {
 
           // DELIVERED orders in range — for count, avg, and delivery charge sum
           prisma.order.aggregate({
-            where: { createdAt: { gte: startDate, lte: endDate }, status: OrderStatus.DELIVERED },
+            where: {
+              createdAt: { gte: startDate, lte: endDate },
+              status: OrderStatus.DELIVERED,
+            },
             _sum: { totalAmount: true, deliveryCharge: true },
             _count: { id: true },
             _avg: { totalAmount: true },
@@ -80,13 +101,16 @@ export const DashboardController = {
           // DELIVERED order items — product revenue (no delivery) and vendor cost
           prisma.orderItem.findMany({
             where: {
-              order: { createdAt: { gte: startDate, lte: endDate }, status: OrderStatus.DELIVERED },
+              order: {
+                createdAt: { gte: startDate, lte: endDate },
+                status: OrderStatus.DELIVERED,
+              },
             },
             select: {
               quantity: true,
               price: true,
               discountPrice: true,
-              product: { select: { shopSellPrice: true } },
+              product: { select: { shopSellPrice: true, shopPrice: true } },
             },
           }),
 
@@ -99,7 +123,9 @@ export const DashboardController = {
           // Vendor payouts still owed (all time — outstanding obligation)
           prisma.vendorPayout.aggregate({
             where: {
-              status: { in: [VendorPayoutStatus.PENDING, VendorPayoutStatus.PROCESSING] },
+              status: {
+                in: [VendorPayoutStatus.PENDING, VendorPayoutStatus.PROCESSING],
+              },
             },
             _sum: { amount: true },
           }),
@@ -117,23 +143,30 @@ export const DashboardController = {
           prisma.user.count(),
 
           // Users who registered in the date range
-          prisma.user.count({ where: { createdAt: { gte: startDate, lte: endDate } } }),
+          prisma.user.count({
+            where: { createdAt: { gte: startDate, lte: endDate } },
+          }),
 
           prisma.shop.count(),
 
           // Shops created in the date range
-          prisma.shop.count({ where: { createdAt: { gte: startDate, lte: endDate } } }),
+          prisma.shop.count({
+            where: { createdAt: { gte: startDate, lte: endDate } },
+          }),
 
           // Total count of unsettled vendor payouts
           prisma.vendorPayout.count({
             where: {
-              status: { in: [VendorPayoutStatus.PENDING, VendorPayoutStatus.PROCESSING] },
+              status: {
+                in: [VendorPayoutStatus.PENDING, VendorPayoutStatus.PROCESSING],
+              },
             },
           }),
         ]);
 
         const grossRevenue = allOrdersAgg._sum.totalAmount ?? 0;
-        const totalDeliveryCharges = deliveredOrdersAgg._sum.deliveryCharge ?? 0;
+        const totalDeliveryCharges =
+          deliveredOrdersAgg._sum.deliveryCharge ?? 0;
 
         // Product-only revenue: snapshot price × qty, no delivery charge
         const productRevenue = deliveredItems.reduce(
@@ -143,7 +176,7 @@ export const DashboardController = {
 
         // Vendor cost: shopSellPrice × qty for delivered items (vendor's earned portion)
         const vendorCost = deliveredItems.reduce(
-          (sum, i) => sum + i.product.shopSellPrice * i.quantity,
+          (sum, i) => sum + i.product.shopPrice * i.quantity,
           0,
         );
 
@@ -152,27 +185,28 @@ export const DashboardController = {
 
         // Platform profit = vendorCost − (pendingPayouts + paidVendorPayouts)
         // i.e. what vendors earned from orders minus what has already been paid / is queued
-        const platformProfit = vendorCost - pendingPayoutsAmount - totalVendorPaid;
+        const platformProfit = productRevenue - vendorCost;
 
-        const avgOrderValue = +(deliveredOrdersAgg._avg.totalAmount?.toFixed(2) ?? 0);
+        const avgOrderValue = +(
+          deliveredOrdersAgg._avg.totalAmount?.toFixed(2) ?? 0
+        );
 
         return res.json({
           role: "ADMIN",
 
           // Revenue
-          grossRevenue,           // All order totalAmounts in range (incl. delivery, all statuses)
-          productRevenue,         // DELIVERED items only, delivery excluded
-          totalDeliveryCharges,   // Delivery charges from delivered orders
-          vendorCost,             // shopSellPrice × qty (vendor's earned portion, delivered items)
-          totalVendorPaid,        // Vendor payouts already sent
-          platformProfit,         // vendorCost − pendingPayoutsAmount − totalVendorPaid
+          grossRevenue, // All order totalAmounts in range (incl. delivery, all statuses)
+          productRevenue, // DELIVERED items only, delivery excluded
+          totalDeliveryCharges, // Delivery charges from delivered orders
+          vendorCost, // shopSellPrice × qty (vendor's earned portion, delivered items)
+          totalVendorPaid, // Vendor payouts already sent
+          platformProfit, // vendorCost − pendingPayoutsAmount − totalVendorPaid
           platformProfitMargin:
             vendorCost > 0
               ? +((platformProfit / vendorCost) * 100).toFixed(2)
               : 0,
-
           // Outstanding obligations to vendors
-          pendingPayoutsAmount,
+          pendingPayoutsAmount: pendingPayoutsAmount - totalVendorPaid,
           pendingPayoutsCount,
 
           // Order metrics in range
@@ -261,7 +295,9 @@ export const DashboardController = {
           prisma.vendorPayout.aggregate({
             where: {
               shopId: shop.id,
-              status: { in: [VendorPayoutStatus.PENDING, VendorPayoutStatus.PROCESSING] },
+              status: {
+                in: [VendorPayoutStatus.PENDING, VendorPayoutStatus.PROCESSING],
+              },
             },
             _sum: { amount: true },
           }),
@@ -293,7 +329,9 @@ export const DashboardController = {
 
           // Payout info from admin
           vendorPayoutsReceived: paidPayoutsAgg._sum.amount ?? 0,
-          vendorPayoutsPending: pendingPayoutsAgg._sum.amount ?? 0,
+          vendorPayoutsPending:
+            (pendingPayoutsAgg._sum.amount ?? 0) -
+            (paidPayoutsAgg._sum.amount ?? 0),
 
           // Counts
           totalOrders,
@@ -315,7 +353,9 @@ export const DashboardController = {
     const role = req.user?.role!;
 
     try {
-      const { startDate, endDate } = getDateRange(req.query as Record<string, unknown>);
+      const { startDate, endDate } = getDateRange(
+        req.query as Record<string, unknown>,
+      );
 
       const orderItems = await prisma.orderItem.findMany({
         where: {
@@ -348,7 +388,9 @@ export const DashboardController = {
     const filter = getShopFilter(req.user?.id!, req.user?.role!);
 
     try {
-      const { startDate, endDate } = getDateRange(req.query as Record<string, unknown>);
+      const { startDate, endDate } = getDateRange(
+        req.query as Record<string, unknown>,
+      );
 
       // Prisma groupBy on a DateTime column groups by exact timestamp (one row per order).
       // Fetch with status and group by date string in JS instead.
@@ -364,7 +406,8 @@ export const DashboardController = {
 
       for (const o of orders) {
         const day = o.createdAt.toISOString().slice(0, 10); // "YYYY-MM-DD"
-        if (!grouped[day]) grouped[day] = { orders: 0, completed: 0, pending: 0 };
+        if (!grouped[day])
+          grouped[day] = { orders: 0, completed: 0, pending: 0 };
         grouped[day].orders += 1;
         if (o.status === OrderStatus.DELIVERED) grouped[day].completed += 1;
         if (o.status === OrderStatus.PENDING) grouped[day].pending += 1;
@@ -386,7 +429,9 @@ export const DashboardController = {
     const userId = req.user?.id!;
 
     try {
-      const { startDate, endDate } = getDateRange(req.query as Record<string, unknown>);
+      const { startDate, endDate } = getDateRange(
+        req.query as Record<string, unknown>,
+      );
 
       let shopId: string | undefined;
       if (role === "SHOP_OWNER") {
@@ -400,7 +445,10 @@ export const DashboardController = {
       // Use actual delivered order items for category revenue (not product list prices)
       const orderItems = await prisma.orderItem.findMany({
         where: {
-          order: { status: OrderStatus.DELIVERED, createdAt: { gte: startDate, lte: endDate } },
+          order: {
+            status: OrderStatus.DELIVERED,
+            createdAt: { gte: startDate, lte: endDate },
+          },
           ...(shopId ? { product: { shopId } } : {}),
         },
         select: {
@@ -723,14 +771,26 @@ export const DashboardController = {
 
     const categoryMap: Record<
       string,
-      { name: string; revenue: number; cost: number; profit: number; units: number }
+      {
+        name: string;
+        revenue: number;
+        cost: number;
+        profit: number;
+        units: number;
+      }
     > = {};
     for (const item of categoryItems) {
       const cat = item.product.category;
       const rev = (item.product.shopSellPrice ?? 0) * item.quantity;
       const cost = (item.product.shopPrice ?? 0) * item.quantity;
       if (!categoryMap[cat.id])
-        categoryMap[cat.id] = { name: cat.name, revenue: 0, cost: 0, profit: 0, units: 0 };
+        categoryMap[cat.id] = {
+          name: cat.name,
+          revenue: 0,
+          cost: 0,
+          profit: 0,
+          units: 0,
+        };
       categoryMap[cat.id].revenue += rev;
       categoryMap[cat.id].cost += cost;
       categoryMap[cat.id].profit += rev - cost;
