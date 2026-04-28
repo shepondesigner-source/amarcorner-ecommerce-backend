@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { prisma } from "../../config/prisma";
-import { OrderStatus } from "../../../generated/prisma";
+import { OrderStatus, VendorPayoutStatus } from "../../../generated/prisma";
+
 const getShopFilter = (userId: string, role: string) => {
   if (role === "SHOP_OWNER") {
     return {
@@ -15,108 +16,297 @@ const getShopFilter = (userId: string, role: string) => {
       },
     };
   }
-
   return {}; // ADMIN sees all
 };
-const getStartDate = (range: string): Date => {
-  const now = new Date();
-  switch (range) {
-    case "today":
-      return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    case "week":
-      return new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
-    case "month":
-      return new Date(now.getFullYear(), now.getMonth(), 1);
-    case "year":
-      return new Date(now.getFullYear(), 0, 1);
-    default:
-      return new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+
+const getDateRange = (
+  query: Record<string, unknown>,
+): { startDate: Date; endDate: Date } => {
+  if (query.startDate && query.endDate) {
+    const startDate = new Date(query.startDate as string);
+    startDate.setHours(0, 0, 0, 0);
+    const endDate = new Date(query.endDate as string);
+    endDate.setHours(23, 59, 59, 999);
+    return { startDate, endDate };
   }
+
+  // Default: last 7 days
+  const now = new Date();
+  const endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+  const startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7, 0, 0, 0, 0);
+  return { startDate, endDate };
 };
 
 export const DashboardController = {
   stats: async (req: Request, res: Response) => {
-    const role = req.user?.role!;
-    const userId = req.user?.id!;
-
     try {
-      const range = (req.query.range as string) || "week";
-      const startDate = getStartDate(range);
+      const role = req.user?.role!;
+      const userId = req.user?.id!;
+      const { startDate, endDate } = getDateRange(req.query as Record<string, unknown>);
 
-      let totalRevenue = 0;
-      let totalCharge = 0;
-
-      /** ADMIN → platform revenue */
+      // -----------------------------------
+      // ADMIN DASHBOARD
+      // -----------------------------------
       if (role === "ADMIN") {
-        const revenueAgg = await prisma.order.aggregate({
-          _sum: { totalAmount: true, deliveryCharge: true },
-          where: { createdAt: { gte: startDate } },
-        });
+        const [
+          allOrdersAgg,
+          deliveredOrdersAgg,
+          deliveredItems,
+          paidPayoutsAgg,
+          pendingPayoutsAgg,
+          ordersByStatus,
+          totalProducts,
+          totalUsers,
+          newUsers,
+          totalShops,
+          newShops,
+          pendingPayoutsCount,
+        ] = await Promise.all([
+          // Gross: all orders in range regardless of status
+          prisma.order.aggregate({
+            where: { createdAt: { gte: startDate, lte: endDate } },
+            _sum: { totalAmount: true },
+            _count: { id: true },
+          }),
 
-        totalRevenue = revenueAgg._sum.totalAmount || 0;
-        totalCharge = revenueAgg._sum.deliveryCharge || 0;
+          // DELIVERED orders in range — for count, avg, and delivery charge sum
+          prisma.order.aggregate({
+            where: { createdAt: { gte: startDate, lte: endDate }, status: OrderStatus.DELIVERED },
+            _sum: { totalAmount: true, deliveryCharge: true },
+            _count: { id: true },
+            _avg: { totalAmount: true },
+          }),
+
+          // DELIVERED order items — product revenue (no delivery) and vendor cost
+          prisma.orderItem.findMany({
+            where: {
+              order: { createdAt: { gte: startDate, lte: endDate }, status: OrderStatus.DELIVERED },
+            },
+            select: {
+              quantity: true,
+              price: true,
+              discountPrice: true,
+              product: { select: { shopSellPrice: true } },
+            },
+          }),
+
+          // Vendor payouts already paid (all time)
+          prisma.vendorPayout.aggregate({
+            where: { status: VendorPayoutStatus.PAID },
+            _sum: { amount: true },
+          }),
+
+          // Vendor payouts still owed (all time — outstanding obligation)
+          prisma.vendorPayout.aggregate({
+            where: {
+              status: { in: [VendorPayoutStatus.PENDING, VendorPayoutStatus.PROCESSING] },
+            },
+            _sum: { amount: true },
+          }),
+
+          // Order counts + amounts grouped by status in range
+          prisma.order.groupBy({
+            by: ["status"],
+            where: { createdAt: { gte: startDate, lte: endDate } },
+            _count: { id: true },
+            _sum: { totalAmount: true },
+          }),
+
+          prisma.product.count({ where: { isActive: true } }),
+
+          prisma.user.count(),
+
+          // Users who registered in the date range
+          prisma.user.count({ where: { createdAt: { gte: startDate, lte: endDate } } }),
+
+          prisma.shop.count(),
+
+          // Shops created in the date range
+          prisma.shop.count({ where: { createdAt: { gte: startDate, lte: endDate } } }),
+
+          // Total count of unsettled vendor payouts
+          prisma.vendorPayout.count({
+            where: {
+              status: { in: [VendorPayoutStatus.PENDING, VendorPayoutStatus.PROCESSING] },
+            },
+          }),
+        ]);
+
+        const grossRevenue = allOrdersAgg._sum.totalAmount ?? 0;
+        const totalDeliveryCharges = deliveredOrdersAgg._sum.deliveryCharge ?? 0;
+
+        // Product-only revenue: snapshot price × qty, no delivery charge
+        const productRevenue = deliveredItems.reduce(
+          (sum, i) => sum + (i.discountPrice ?? i.price) * i.quantity,
+          0,
+        );
+
+        // Vendor cost: shopSellPrice × qty for delivered items (vendor's earned portion)
+        const vendorCost = deliveredItems.reduce(
+          (sum, i) => sum + i.product.shopSellPrice * i.quantity,
+          0,
+        );
+
+        const totalVendorPaid = paidPayoutsAgg._sum.amount ?? 0;
+        const pendingPayoutsAmount = pendingPayoutsAgg._sum.amount ?? 0;
+
+        // Platform profit = vendorCost − (pendingPayouts + paidVendorPayouts)
+        // i.e. what vendors earned from orders minus what has already been paid / is queued
+        const platformProfit = vendorCost - pendingPayoutsAmount - totalVendorPaid;
+
+        const avgOrderValue = +(deliveredOrdersAgg._avg.totalAmount?.toFixed(2) ?? 0);
+
+        return res.json({
+          role: "ADMIN",
+
+          // Revenue
+          grossRevenue,           // All order totalAmounts in range (incl. delivery, all statuses)
+          productRevenue,         // DELIVERED items only, delivery excluded
+          totalDeliveryCharges,   // Delivery charges from delivered orders
+          vendorCost,             // shopSellPrice × qty (vendor's earned portion, delivered items)
+          totalVendorPaid,        // Vendor payouts already sent
+          platformProfit,         // vendorCost − pendingPayoutsAmount − totalVendorPaid
+          platformProfitMargin:
+            vendorCost > 0
+              ? +((platformProfit / vendorCost) * 100).toFixed(2)
+              : 0,
+
+          // Outstanding obligations to vendors
+          pendingPayoutsAmount,
+          pendingPayoutsCount,
+
+          // Order metrics in range
+          totalOrders: allOrdersAgg._count.id,
+          deliveredOrders: deliveredOrdersAgg._count.id,
+          avgOrderValue,
+          ordersByStatus: ordersByStatus.map((s) => ({
+            status: s.status,
+            count: s._count.id,
+            amount: s._sum.totalAmount ?? 0,
+          })),
+
+          // Catalog & user counts
+          totalProducts,
+          totalUsers,
+          newUsers,
+          totalShops,
+          newShops,
+        });
       }
 
-      /** SHOP_OWNER → shop revenue */
+      // -----------------------------------
+      // SHOP OWNER DASHBOARD
+      // -----------------------------------
       if (role === "SHOP_OWNER") {
-        const items = await prisma.orderItem.findMany({
-          where: {
-            order: { createdAt: { gte: startDate } },
-            product: {
-              shop: {
-                ownerId: userId,
-              },
-            },
-          },
-          select: {
-            quantity: true,
-            product: {
-              select: {
-                shopPrice: true,
-              },
-            },
-          },
+        const shop = await prisma.shop.findFirst({
+          where: { ownerId: userId },
+          select: { id: true },
         });
 
-        totalRevenue = items.reduce((sum, item) => {
-          return sum + item.product.shopPrice * item.quantity;
-        }, 0);
+        if (!shop) {
+          return res.status(404).json({ message: "Shop not found" });
+        }
+
+        const [
+          totalProducts,
+          totalOrders,
+          uniqueCustomers,
+          orderItems,
+          paidPayoutsAgg,
+          pendingPayoutsAgg,
+        ] = await Promise.all([
+          prisma.product.count({ where: { shopId: shop.id } }),
+
+          prisma.order.count({
+            where: {
+              createdAt: { gte: startDate, lte: endDate },
+              items: { some: { product: { shopId: shop.id } } },
+            },
+          }),
+
+          prisma.order.findMany({
+            where: {
+              createdAt: { gte: startDate, lte: endDate },
+              items: { some: { product: { shopId: shop.id } } },
+            },
+            distinct: ["userId"],
+            select: { userId: true },
+          }),
+
+          // All order items in range for revenue + cost calculation
+          prisma.orderItem.findMany({
+            where: {
+              order: { createdAt: { gte: startDate, lte: endDate } },
+              product: { shopId: shop.id },
+            },
+            select: {
+              quantity: true,
+              product: {
+                select: { shopPrice: true, shopSellPrice: true },
+              },
+            },
+          }),
+
+          // Payouts admin already sent to this shop in range
+          prisma.vendorPayout.aggregate({
+            where: {
+              shopId: shop.id,
+              createdAt: { gte: startDate, lte: endDate },
+              status: VendorPayoutStatus.PAID,
+            },
+            _sum: { amount: true },
+          }),
+
+          // Payouts still owed to this shop (outstanding)
+          prisma.vendorPayout.aggregate({
+            where: {
+              shopId: shop.id,
+              status: { in: [VendorPayoutStatus.PENDING, VendorPayoutStatus.PROCESSING] },
+            },
+            _sum: { amount: true },
+          }),
+        ]);
+
+        // shopSellPrice = what shop charges → revenue
+        const totalRevenue = orderItems.reduce(
+          (sum, item) => sum + item.product.shopSellPrice * item.quantity,
+          0,
+        );
+        // shopPrice = inventory cost price
+        const totalCost = orderItems.reduce(
+          (sum, item) => sum + item.product.shopPrice * item.quantity,
+          0,
+        );
+        const grossProfit = totalRevenue - totalCost;
+
+        return res.json({
+          role: "SHOP_OWNER",
+
+          // Revenue (shopSellPrice × qty for orders in range)
+          totalRevenue,
+          totalCost,
+          grossProfit,
+          profitMargin:
+            totalRevenue > 0
+              ? +((grossProfit / totalRevenue) * 100).toFixed(2)
+              : 0,
+
+          // Payout info from admin
+          vendorPayoutsReceived: paidPayoutsAgg._sum.amount ?? 0,
+          vendorPayoutsPending: pendingPayoutsAgg._sum.amount ?? 0,
+
+          // Counts
+          totalOrders,
+          totalProducts,
+          uniqueCustomers: uniqueCustomers.length,
+          totalShops: 1,
+        });
       }
 
-      const totalOrders = await prisma.order.count({
-        where: {
-          createdAt: { gte: startDate },
-          ...getShopFilter(userId, role),
-        },
-      });
-
-      const totalUsers = await prisma.user.count({
-        where: { createdAt: { gte: startDate } },
-      });
-
-      const totalProducts = await prisma.product.count({
-        where:
-          role === "SHOP_OWNER"
-            ? {
-                shop: {
-                  ownerId: userId,
-                },
-              }
-            : {},
-      });
-      totalRevenue = totalRevenue - totalCharge;
-      res.json({
-        totalRevenue,
-        totalOrders,
-        totalUsers,
-        totalProducts,
-        revenueGrowth: 10,
-        orderGrowth: 5,
-        userGrowth: 8,
-      });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: "Failed to fetch stats" });
+      return res.json({ message: "No dashboard data" });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Failed to fetch dashboard stats" });
     }
   },
 
@@ -125,25 +315,26 @@ export const DashboardController = {
     const role = req.user?.role!;
 
     try {
-      const range = (req.query.range as string) || "week";
-      const startDate = getStartDate(range);
+      const { startDate, endDate } = getDateRange(req.query as Record<string, unknown>);
 
       const orderItems = await prisma.orderItem.findMany({
         where: {
-          order: { createdAt: { gte: startDate }, ...filter },
+          order: { createdAt: { gte: startDate, lte: endDate }, ...filter },
         },
         include: {
           order: true,
-          product: true, // ✅ required
+          product: true,
         },
       });
 
       const result = orderItems.map((item) => ({
         date: item.order.createdAt.toISOString(),
+        // Fix 1: SHOP_OWNER uses shopSellPrice (sell price), not shopPrice (cost price)
+        // Fix 2: multiply by quantity for correct totals
         revenue:
           role === "SHOP_OWNER"
-            ? item.product.shopPrice * item.quantity
-            : (item.discountPrice ?? item.price),
+            ? item.product.shopSellPrice * item.quantity
+            : (item.discountPrice ?? item.price) * item.quantity,
       }));
 
       res.json(result);
@@ -157,22 +348,31 @@ export const DashboardController = {
     const filter = getShopFilter(req.user?.id!, req.user?.role!);
 
     try {
-      const range = (req.query.range as string) || "week";
-      const startDate = getStartDate(range);
+      const { startDate, endDate } = getDateRange(req.query as Record<string, unknown>);
 
-      // Group orders by date (day precision)
-      const orders = await prisma.order.groupBy({
-        by: ["createdAt"],
-        _count: { id: true },
-        where: { createdAt: { gte: startDate }, ...filter },
+      // Prisma groupBy on a DateTime column groups by exact timestamp (one row per order).
+      // Fetch with status and group by date string in JS instead.
+      const orders = await prisma.order.findMany({
+        where: { createdAt: { gte: startDate, lte: endDate }, ...filter },
+        select: { createdAt: true, status: true },
       });
 
-      const result = orders.map((o) => ({
-        date: o.createdAt.toISOString(),
-        orders: o._count.id,
-        completed: 0, // placeholder
-        pending: 0, // placeholder
-      }));
+      const grouped: Record<
+        string,
+        { orders: number; completed: number; pending: number }
+      > = {};
+
+      for (const o of orders) {
+        const day = o.createdAt.toISOString().slice(0, 10); // "YYYY-MM-DD"
+        if (!grouped[day]) grouped[day] = { orders: 0, completed: 0, pending: 0 };
+        grouped[day].orders += 1;
+        if (o.status === OrderStatus.DELIVERED) grouped[day].completed += 1;
+        if (o.status === OrderStatus.PENDING) grouped[day].pending += 1;
+      }
+
+      const result = Object.entries(grouped)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([date, v]) => ({ date, ...v }));
 
       res.json(result);
     } catch (err) {
@@ -182,24 +382,53 @@ export const DashboardController = {
   },
 
   categories: async (req: Request, res: Response) => {
+    const role = req.user?.role!;
+    const userId = req.user?.id!;
+
     try {
-      // Sum of prices per category
-      const categoryAgg = await prisma.product.groupBy({
-        by: ["categoryId"],
-        _sum: { price: true },
+      const { startDate, endDate } = getDateRange(req.query as Record<string, unknown>);
+
+      let shopId: string | undefined;
+      if (role === "SHOP_OWNER") {
+        const shop = await prisma.shop.findFirst({
+          where: { ownerId: userId },
+          select: { id: true },
+        });
+        shopId = shop?.id;
+      }
+
+      // Use actual delivered order items for category revenue (not product list prices)
+      const orderItems = await prisma.orderItem.findMany({
+        where: {
+          order: { status: OrderStatus.DELIVERED, createdAt: { gte: startDate, lte: endDate } },
+          ...(shopId ? { product: { shopId } } : {}),
+        },
+        select: {
+          quantity: true,
+          price: true,
+          discountPrice: true,
+          product: {
+            select: {
+              shopSellPrice: true,
+              category: { select: { id: true, name: true } },
+            },
+          },
+        },
       });
 
-      const categories = await prisma.category.findMany();
+      const categoryMap: Record<string, { name: string; value: number }> = {};
+      for (const item of orderItems) {
+        const cat = item.product.category;
+        const revenue =
+          role === "SHOP_OWNER"
+            ? item.product.shopSellPrice * item.quantity
+            : (item.discountPrice ?? item.price) * item.quantity;
+        if (!categoryMap[cat.id])
+          categoryMap[cat.id] = { name: cat.name, value: 0 };
+        categoryMap[cat.id].value += revenue;
+      }
 
-      const result = categoryAgg.map((c) => {
-        const category = categories.find((cat) => cat.id === c.categoryId);
-        return {
-          name: category?.name ?? "Unknown",
-          value: c._sum.price ?? 0,
-        };
-      });
-
-      res.json(result);
+      res.json(Object.values(categoryMap));
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: "Failed to fetch categories" });
@@ -213,18 +442,10 @@ export const DashboardController = {
     try {
       const limit = Number(req.query.limit) || 5;
 
-      // Get top products by sold quantity
       const products = await prisma.product.findMany({
         take: limit,
         orderBy: { sold: "desc" },
-        where:
-          role === "SHOP_OWNER"
-            ? {
-                shop: {
-                  ownerId: userId,
-                },
-              }
-            : {},
+        where: role === "SHOP_OWNER" ? { shop: { ownerId: userId } } : {},
         include: { category: true },
       });
 
@@ -233,9 +454,10 @@ export const DashboardController = {
         name: p.name,
         category: p.category?.name ?? "Unknown",
         sales: p.sold,
+        // Fix: SHOP_OWNER was using shopPrice (cost) — should be shopSellPrice (sell price)
         revenue:
           role === "SHOP_OWNER"
-            ? p.shopPrice * p.sold
+            ? p.shopSellPrice * p.sold
             : (p.discountPrice ?? p.price) * p.sold,
         growth: 0,
       }));
@@ -263,9 +485,7 @@ export const DashboardController = {
           items: {
             include: {
               product: {
-                select: {
-                  shopPrice: true,
-                },
+                select: { shopSellPrice: true },
               },
             },
           },
@@ -273,13 +493,15 @@ export const DashboardController = {
       });
 
       const result = orders.map((o) => {
-        const shopRevenue = o.items.reduce((sum, item) => {
-          return sum + item.product.shopPrice * item.quantity;
-        }, 0);
+        // Fix: was using shopPrice (cost price) — now correctly uses shopSellPrice
+        const shopRevenue = o.items.reduce(
+          (sum, item) => sum + item.product.shopSellPrice * item.quantity,
+          0,
+        );
 
         return {
           id: o.id,
-          orderNumber: o.id.slice(0, 6).toUpperCase(),
+          orderNumber: o.orderNumber, // Fix: use the auto-increment orderNumber, not id slice
           customerName: o.user?.name ?? "Unknown",
           date: o.createdAt.toISOString(),
           amount: role === "SHOP_OWNER" ? shopRevenue : o.totalAmount,
@@ -319,7 +541,6 @@ export const DashboardController = {
     });
 
     // ── 3. PRODUCT-WISE ORDERS ───────────────────────────────────────────────
-    // Group OrderItem by product, filtered to this shop
     const productWiseOrders = await prisma.orderItem.groupBy({
       by: ["productId"],
       where: { product: { shopId } },
@@ -330,7 +551,6 @@ export const DashboardController = {
 
     const productIds = productWiseOrders.map((p) => p.productId);
 
-    // Fetch full product details including shopPrice / shopSellPrice
     const productDetails = await prisma.product.findMany({
       where: { id: { in: productIds } },
       select: {
@@ -338,8 +558,8 @@ export const DashboardController = {
         name: true,
         price: true,
         discountPrice: true,
-        shopPrice: true, // ← cost price (what shop paid)
-        shopSellPrice: true, // ← sell price (what shop charges)
+        shopPrice: true,
+        shopSellPrice: true,
         imageUrls: true,
         stock: true,
         sold: true,
@@ -350,15 +570,14 @@ export const DashboardController = {
 
     const productMap = Object.fromEntries(productDetails.map((p) => [p.id, p]));
 
-    // Enrich with revenue figures using shopSellPrice
     const productWiseOrdersEnriched = productWiseOrders.map((item) => {
       const product = productMap[item.productId];
       const unitsSold = item._sum.quantity ?? 0;
       const orderCount = item._count.id;
 
-      // Shop revenue  = shopSellPrice × units sold
-      // Shop cost     = shopPrice     × units sold
-      // Shop profit   = (shopSellPrice - shopPrice) × units sold
+      // shopRevenue  = shopSellPrice × units sold
+      // shopCost     = shopPrice     × units sold
+      // shopProfit   = (shopSellPrice - shopPrice) × units sold
       const shopRevenue = (product?.shopSellPrice ?? 0) * unitsSold;
       const shopCost = (product?.shopPrice ?? 0) * unitsSold;
       const shopProfit = shopRevenue - shopCost;
@@ -373,7 +592,7 @@ export const DashboardController = {
       };
     });
 
-    // ── 4. SHOP REVENUE (shopSellPrice based, DELIVERED only) ────────────────
+    // ── 4. SHOP REVENUE (DELIVERED only) ─────────────────────────────────────
     const deliveredItems = await prisma.orderItem.findMany({
       where: {
         product: { shopId },
@@ -395,7 +614,7 @@ export const DashboardController = {
     );
     const totalShopProfit = totalShopRevenue - totalShopCost;
 
-    // Revenue breakdown by order status — all using shopSellPrice
+    // Revenue breakdown by order status
     const revenueByStatus = await Promise.all(
       Object.values(OrderStatus).map(async (status) => {
         const items = await prisma.orderItem.findMany({
@@ -423,7 +642,7 @@ export const DashboardController = {
       }),
     );
 
-    // ── 5. MONTHLY REVENUE TREND (last 12 months, shopSellPrice based) ───────
+    // ── 5. MONTHLY REVENUE TREND (last 12 months, DELIVERED only) ────────────
     const twelveMonthsAgo = new Date();
     twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 11);
     twelveMonthsAgo.setDate(1);
@@ -487,7 +706,7 @@ export const DashboardController = {
       },
     });
 
-    // ── 8. CATEGORY-WISE REVENUE (shopSellPrice) ─────────────────────────────
+    // ── 8. CATEGORY-WISE REVENUE (shopSellPrice, DELIVERED only) ─────────────
     const categoryItems = await prisma.orderItem.findMany({
       where: { product: { shopId }, order: { status: OrderStatus.DELIVERED } },
       select: {
@@ -504,26 +723,14 @@ export const DashboardController = {
 
     const categoryMap: Record<
       string,
-      {
-        name: string;
-        revenue: number;
-        cost: number;
-        profit: number;
-        units: number;
-      }
+      { name: string; revenue: number; cost: number; profit: number; units: number }
     > = {};
     for (const item of categoryItems) {
       const cat = item.product.category;
       const rev = (item.product.shopSellPrice ?? 0) * item.quantity;
       const cost = (item.product.shopPrice ?? 0) * item.quantity;
       if (!categoryMap[cat.id])
-        categoryMap[cat.id] = {
-          name: cat.name,
-          revenue: 0,
-          cost: 0,
-          profit: 0,
-          units: 0,
-        };
+        categoryMap[cat.id] = { name: cat.name, revenue: 0, cost: 0, profit: 0, units: 0 };
       categoryMap[cat.id].revenue += rev;
       categoryMap[cat.id].cost += cost;
       categoryMap[cat.id].profit += rev - cost;
@@ -635,19 +842,17 @@ export const DashboardController = {
         avgPrice: productStats._avg.price ?? 0,
         avgRating: avgRating._avg.rating ?? 0,
         totalReviews: reviewStats,
-        // Shop-price aggregates
-        totalShopCostValue: productStats._sum.shopPrice ?? 0, // sum of shopPrice across all products
-        totalShopSellValue: productStats._sum.shopSellPrice ?? 0, // sum of shopSellPrice across all products
+        totalShopCostValue: productStats._sum.shopPrice ?? 0,
+        totalShopSellValue: productStats._sum.shopSellPrice ?? 0,
         avgShopPrice: productStats._avg.shopPrice ?? 0,
         avgShopSellPrice: productStats._avg.shopSellPrice ?? 0,
       },
 
-      productWiseOrders: productWiseOrdersEnriched, // ← includes shopRevenue, shopCost, shopProfit per product
+      productWiseOrders: productWiseOrdersEnriched,
       topSellingProducts,
       lowStockProducts,
 
       revenue: {
-        // All revenue figures now use shopSellPrice × quantity
         total: totalShopRevenue,
         totalCost: totalShopCost,
         totalProfit: totalShopProfit,
