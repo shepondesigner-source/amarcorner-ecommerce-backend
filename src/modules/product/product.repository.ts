@@ -308,6 +308,7 @@ export class ProductRepository {
           discountPrice: true,
           imageUrls: true,
           rating: true,
+          stock: true,
         },
         orderBy: [
           {
