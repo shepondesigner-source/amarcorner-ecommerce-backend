@@ -22,8 +22,8 @@ export const BannerService = {
     });
   },
 
-  getAllBanners: async () => {
-    return BannerRepository.findAll();
+  getAllBanners: async (option: { isActive?: boolean }) => {
+    return BannerRepository.findAll(option);
   },
 
   getBannerById: async (id: string) => {

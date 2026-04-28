@@ -14,9 +14,10 @@ export const BannerController = {
     }
   },
 
-  getAll: async (_req: Request, res: Response, next: NextFunction) => {
+  getAll: async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const banners = await BannerService.getAllBanners();
+      const isActive= req.query.isActive === "yes" ? true : undefined;
+      const banners = await BannerService.getAllBanners({isActive});
       res.json({ success: true, data: banners });
     } catch (err) {
       next(err);
