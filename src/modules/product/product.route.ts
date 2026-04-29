@@ -21,6 +21,7 @@ import {
   getNewProducts,
   getProducts,
   getProductsBySlug,
+  getStockOutProducts,
   productById,
   productByIdRelated,
   productBySearchText,
@@ -36,16 +37,18 @@ router.post(
   "/",
   upload.array("images", 15),
   validate(createProductSchema),
-  asyncHandler(createProduct)
+  asyncHandler(createProduct),
 );
 
 router.post(
   "/vendor",
   upload.array("images", 15),
   validate(createVendorProductSchema),
-  asyncHandler(createVendorProduct)
+  asyncHandler(createVendorProduct),
 );
 router.get("/", asyncHandler(getProducts));
+
+router.get("/stock-out", asyncHandler(getStockOutProducts));
 router.get("/admin", authenticate, asyncHandler(getProducts));
 router.post("/search", asyncHandler(productBySearchText));
 
@@ -57,14 +60,14 @@ router.get(
   "/rate",
   authenticate,
   authorize("USER"),
-  asyncHandler(getdProductDeliveryCharge)
+  asyncHandler(getdProductDeliveryCharge),
 );
 
 //open charge
 router.post(
   "/charge",
 
-  asyncHandler(getdProductDeliveryChargeOpen)
+  asyncHandler(getdProductDeliveryChargeOpen),
 );
 router.post("/discount-prices", asyncHandler(getDiscountPricesByIds));
 router.get("/related/:id", asyncHandler(productByIdRelated));
@@ -76,7 +79,7 @@ router.put(
   upload.array("images", 15),
   authenticate,
   validate(updateProductSchema),
-  asyncHandler(updateProduct)
+  asyncHandler(updateProduct),
 );
 
 router.delete(
@@ -84,7 +87,7 @@ router.delete(
   authenticate,
   authorize("ADMIN"),
   validate(deleteProductSchema),
-  asyncHandler(deleteProduct)
+  asyncHandler(deleteProduct),
 );
 
 export default router;

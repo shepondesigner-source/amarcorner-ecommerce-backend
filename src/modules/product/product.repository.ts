@@ -116,7 +116,7 @@ export class ProductRepository {
         where,
         skip,
         take,
-        orderBy: [{ stock: "desc" }, { createdAt: "desc" }],
+        orderBy: [{ discountPrice: "asc" }, { createdAt: "desc" }],
         include: {
           sizes: true,
           category: true,
@@ -132,19 +132,41 @@ export class ProductRepository {
       total,
     };
   }
+  async findStockoutProduct(filter: ProductFilter) {
+    const { skip, take } = filter;
+
+    const [items, total] = await prisma.$transaction([
+      prisma.product.findMany({
+        where: { stock: 0 }, // Find products with zero stock
+        skip,
+        take,
+        orderBy: [{ stock: "desc" }, { createdAt: "desc" }],
+        include: {
+          sizes: true,
+          category: true,
+          subCategory: true,
+          shop: true,
+        },
+      }),
+      prisma.product.count({ where: { stock: 0 } }),
+    ]);
+
+    return {
+      items,
+      total,
+    };
+  }
 
   async featuredProduct() {
     return prisma.product.findMany({
       where: {
         isFeatured: true,
         isActive: true,
+        stock: { gt: 0 },
       },
       orderBy: [
         {
-          stock: "desc", // products with stock first
-        },
-        {
-          createdAt: "desc", // newest first
+          discountPrice: "asc", // newest first
         },
       ],
       select: {
@@ -166,6 +188,7 @@ export class ProductRepository {
         where: {
           isFeatured: false,
           isActive: true,
+          stock: { gt: 0 },
         },
         select: {
           id: true,
@@ -179,10 +202,7 @@ export class ProductRepository {
         },
         orderBy: [
           {
-            stock: "desc", // products with stock first
-          },
-          {
-            createdAt: "desc", // newest first
+            discountPrice: "asc", // newest first
           },
         ],
         skip,
@@ -227,6 +247,11 @@ export class ProductRepository {
           },
         },
       },
+      orderBy: [
+        {
+          discountPrice: "asc", // newest first
+        },
+      ],
     });
   }
   async getDiscountPricesByIds(productIds: string[]) {
@@ -234,6 +259,7 @@ export class ProductRepository {
       where: {
         id: { in: productIds },
         discountPrice: { not: null },
+        stock: { gt: 0 },
       },
       select: {
         id: true,
@@ -242,10 +268,7 @@ export class ProductRepository {
       },
       orderBy: [
         {
-          stock: "desc", // products with stock first
-        },
-        {
-          createdAt: "desc", // newest first
+          discountPrice: "asc", // newest first
         },
       ],
     });
@@ -277,6 +300,7 @@ export class ProductRepository {
           contains: searchText,
           mode: "insensitive", // case-insensitive search
         },
+        stock: { gt: 0 },
       },
       select: {
         name: true,
@@ -284,10 +308,7 @@ export class ProductRepository {
       },
       orderBy: [
         {
-          stock: "desc", // products with stock first
-        },
-        {
-          createdAt: "desc", // newest first
+          discountPrice: "asc", // newest first
         },
       ],
     });
@@ -299,6 +320,7 @@ export class ProductRepository {
         where: {
           slug: slug,
           isActive: true,
+          stock: { gt: 0 },
         },
         select: {
           id: true,
@@ -312,10 +334,7 @@ export class ProductRepository {
         },
         orderBy: [
           {
-            stock: "desc", // products with stock first
-          },
-          {
-            createdAt: "desc", // newest first
+            discountPrice: "asc", // newest first
           },
         ],
         skip,

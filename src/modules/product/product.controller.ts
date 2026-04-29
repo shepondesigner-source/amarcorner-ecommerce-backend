@@ -21,6 +21,10 @@ export const getProducts = async (req: Request, res: Response) => {
   const result = await service.findPaginated(req.user!, req.query);
   res.json(result);
 };
+export const getStockOutProducts = async (req: Request, res: Response) => {
+  const result = await service.findPaginatedStockout(req.query);
+  res.json(result);
+};
 
 export const updateProduct = async (req: Request, res: Response) => {
   const files = Array.isArray(req.files) ? req.files : [];

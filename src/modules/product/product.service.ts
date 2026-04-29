@@ -57,6 +57,7 @@ export class ProductService {
       const shops = await prisma.shop.findMany({
         where: {
           ownerId: user.id,
+          
         },
         select: {
           id: true,
@@ -111,6 +112,27 @@ export class ProductService {
 
       skip,
       take: limit,
+    });
+
+    return {
+      data: result.items,
+      meta: {
+        total: result.total,
+        page,
+        limit,
+        totalPages: Math.ceil(result.total / limit),
+      },
+    };
+  }
+   async findPaginatedStockout( query: any) {
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 10;
+    const skip = (page - 1) * limit;
+   
+    const result = await this.repo.findStockoutProduct({
+      skip,
+      take: limit,
+    
     });
 
     return {
