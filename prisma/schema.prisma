@@ -210,7 +210,7 @@ model Product {
 
 model Order {
   id          String @id @default(cuid())
-  orderNumber Int    @unique @default(autoincrement())
+  orderNumber Int    @unique
   userId      String
   user        User   @relation(fields: [userId], references: [id], onDelete: Restrict)
 

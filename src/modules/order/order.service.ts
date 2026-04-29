@@ -46,7 +46,7 @@ type CreateOrderInput = {
 
 export const createOrderService = async (
   userId: string,
-  data: CreateOrderInput
+  data: CreateOrderInput,
 ) => {
   /** 1️⃣ Get default shipping address */
   const shippingAddress = await prisma.shippingAddress.findFirst({
@@ -101,10 +101,12 @@ export const createOrderService = async (
     throw new Error("Payment amount mismatch");
   }
 
+  const orderNumber = (await prisma.order.count({})) + 1; // Simple order number generation (not ideal for high concurrency)
   /** 5️⃣ Create order (transaction) */
   const order = await prisma.$transaction(async (tx) => {
     const order = await tx.order.create({
       data: {
+        orderNumber: orderNumber,
         comment: data.comment,
         userId,
         shippingAddressId: shippingAddress.id,
@@ -174,24 +176,37 @@ export const createOrderServiceOpen = async (data: CreateOrderInputOpen) => {
         })
       : null;
 
-    if (emailUser) {
-      user = await prisma.user.update({
-        where: { id: emailUser.id },
-        data: {
-          name: data.user.fullName,
-          phone: data.user.phone,
-        },
-      });
-    } else {
-      user = await prisma.user.create({
-        data: {
-          name: data.user.fullName,
-          email: data.user.email || null,
-          phone: data.user.phone,
-          password: hashedPassword,
-          role: "USER",
-        },
-      });
+    try {
+      if (emailUser) {
+        user = await prisma.user.update({
+          where: { id: emailUser.id },
+          data: {
+            name: data.user.fullName,
+            phone: data.user.phone,
+          },
+        });
+      } else {
+        user = await prisma.user.create({
+          data: {
+            name: data.user.fullName,
+            email: data.user.email || null,
+            phone: data.user.phone,
+            password: hashedPassword,
+            role: "USER",
+          },
+        });
+      }
+    } catch (e: any) {
+      // P2002 = unique constraint violation (race condition: another request
+      // created this user between our findFirst and create)
+      if (e?.code === "P2002") {
+        user = await prisma.user.findFirst({
+          where: { phone: data.user.phone },
+        });
+        if (!user) throw e;
+      } else {
+        throw e;
+      }
     }
   }
 
@@ -201,7 +216,6 @@ export const createOrderServiceOpen = async (data: CreateOrderInputOpen) => {
       userId: user.id,
     },
   });
-
   /** If exists → update */
   if (shippingAddress) {
     shippingAddress = await prisma.shippingAddress.update({
@@ -273,11 +287,13 @@ export const createOrderServiceOpen = async (data: CreateOrderInputOpen) => {
   if (data.payment.amount !== totalAmount) {
     throw new Error("Payment amount mismatch");
   }
+  const orderNumber = (await prisma.order.count({})) + 1; // Simple order number generation (not ideal for high concurrency)
 
   /** 7️⃣ Transaction: Order + Payment */
   const order = await prisma.$transaction(async (tx) => {
     const createdOrder = await tx.order.create({
       data: {
+        orderNumber,
         comment: data.comment,
         userId: user.id,
         shippingAddressId: shippingAddress.id,
@@ -316,7 +332,7 @@ export const getOrderListService = async (
   search?: string,
   shopId?: string,
   vendorPayoutStatus?: VendorPayoutStatus,
-  excludePaidVendorPayment?: boolean
+  excludePaidVendorPayment?: boolean,
 ) => {
   const skip = (page - 1) * limit;
 
@@ -460,7 +476,7 @@ export const updateOrderService = async (
   orderId: string,
   userId: string,
   role: Role,
-  payload: any
+  payload: any,
 ) => {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
@@ -540,7 +556,7 @@ export const updateOrderService = async (
 
 export const updateOrderAmountService = async (
   orderId: string,
-  amount: number
+  amount: number,
 ) => {
   /* ================= ADMIN ================= */
   return prisma.order.update({
