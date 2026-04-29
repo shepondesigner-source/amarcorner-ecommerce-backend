@@ -101,12 +101,10 @@ export const createOrderService = async (
     throw new Error("Payment amount mismatch");
   }
 
-  const orderNumber = (await prisma.order.count({})) + 1; // Simple order number generation (not ideal for high concurrency)
   /** 5️⃣ Create order (transaction) */
   const order = await prisma.$transaction(async (tx) => {
     const order = await tx.order.create({
       data: {
-        orderNumber: orderNumber,
         comment: data.comment,
         userId,
         shippingAddressId: shippingAddress.id,
@@ -287,13 +285,11 @@ export const createOrderServiceOpen = async (data: CreateOrderInputOpen) => {
   if (data.payment.amount !== totalAmount) {
     throw new Error("Payment amount mismatch");
   }
-  const orderNumber = (await prisma.order.count({})) + 1; // Simple order number generation (not ideal for high concurrency)
 
   /** 7️⃣ Transaction: Order + Payment */
   const order = await prisma.$transaction(async (tx) => {
     const createdOrder = await tx.order.create({
       data: {
-        orderNumber,
         comment: data.comment,
         userId: user.id,
         shippingAddressId: shippingAddress.id,
