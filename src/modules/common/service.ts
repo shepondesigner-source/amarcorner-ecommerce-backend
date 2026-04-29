@@ -54,6 +54,7 @@ export async function sendOtp(email: string, otp: string) {
 
 export const createPathaoOrder = async (orderId: any) => {
   const token = await getPathaoToken();
+
   const order = await prisma.order.findFirst({
     where: { id: orderId },
     include: {
@@ -76,7 +77,7 @@ export const createPathaoOrder = async (orderId: any) => {
       store_id: order?.items[0].product.shop.pathaoId,
       merchant_order_id: `ORD-0000${order?.orderNumber}`,
       recipient_name: order?.user.name,
-      recipient_phone: order?.user.phone,
+      recipient_phone: order?.user.phone.trim(),
       recipient_address: order?.shippingAddress.address,
       amount_to_collect: order?.totalAmount,
       item_description: "Ecommerce Product",
@@ -92,6 +93,8 @@ export const createPathaoOrder = async (orderId: any) => {
       },
     },
   );
+  console.log(res.data);
+
   const updateOrder = await prisma.order.update({
     where: { id: orderId },
     data: {
