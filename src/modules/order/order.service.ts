@@ -168,9 +168,11 @@ export const createOrderServiceOpen = async (data: CreateOrderInputOpen) => {
   if (!user) {
     const hashedPassword = await bcrypt.hash("12345678", 10);
 
-    let emailUser = data.user.email
+    const emailUser = data.user.email
       ? await prisma.user.findUnique({
-          where: { email: data.user.email },
+          where: {
+            email: data.user.email,
+          },
         })
       : null;
 
@@ -195,12 +197,13 @@ export const createOrderServiceOpen = async (data: CreateOrderInputOpen) => {
         });
       }
     } catch (e: any) {
-      // P2002 = unique constraint violation (race condition: another request
-      // created this user between our findFirst and create)
       if (e?.code === "P2002") {
         user = await prisma.user.findFirst({
-          where: { phone: data.user.phone },
+          where: {
+            phone: data.user.phone,
+          },
         });
+
         if (!user) throw e;
       } else {
         throw e;
@@ -208,13 +211,13 @@ export const createOrderServiceOpen = async (data: CreateOrderInputOpen) => {
     }
   }
 
-  /** 3️⃣ Check if shipping address exists */
+  /** 3️⃣ Shipping Address */
   let shippingAddress = await prisma.shippingAddress.findFirst({
     where: {
       userId: user.id,
     },
   });
-  /** If exists → update */
+
   if (shippingAddress) {
     shippingAddress = await prisma.shippingAddress.update({
       where: {
@@ -229,7 +232,6 @@ export const createOrderServiceOpen = async (data: CreateOrderInputOpen) => {
       },
     });
   } else {
-    /** If not exists → create */
     shippingAddress = await prisma.shippingAddress.create({
       data: {
         userId: user.id,
@@ -242,10 +244,11 @@ export const createOrderServiceOpen = async (data: CreateOrderInputOpen) => {
     });
   }
 
-  /** 4️⃣ Fetch Products */
+  /** 4️⃣ Products */
   const productIds = data.items.map((i) => i.productId);
-  if (productIds.length === 0) {
-    return [];
+
+  if (!productIds.length) {
+    throw new Error("No product selected");
   }
 
   const products = await prisma.product.findMany({
@@ -253,26 +256,34 @@ export const createOrderServiceOpen = async (data: CreateOrderInputOpen) => {
       id: { in: productIds },
       isActive: true,
     },
+    include: {
+      shop: {
+        select: {
+          id: true,
+          ownerId: true,
+        },
+      },
+    },
   });
 
   if (products.length !== data.items.length) {
     throw new Error("Invalid or inactive product found");
   }
 
-  /** 5️⃣ Calculate Total */
+  /** 5️⃣ Calculate */
   let totalAmount = 0;
 
   const orderItems = data.items.map((item) => {
     const product = products.find((p) => p.id === item.productId)!;
 
-    const price = product.discountPrice ?? product.price;
-    const lineTotal = price * item.quantity;
-    totalAmount += lineTotal;
+    const finalPrice = product.discountPrice ?? product.price;
+
+    totalAmount += finalPrice * item.quantity;
 
     return {
       productId: product.id,
       imageUrl: item.imageUrl,
-      sizeId: item.sizeId,
+      sizeId: item.sizeId || null,
       price: product.price,
       discountPrice: product.discountPrice,
       quantity: item.quantity,
@@ -281,16 +292,17 @@ export const createOrderServiceOpen = async (data: CreateOrderInputOpen) => {
 
   totalAmount += data.deliveryCharge;
 
-  /** 6️⃣ Validate Payment */
-  if (data.payment.amount !== totalAmount) {
+  /** 6️⃣ Validate payment */
+  if (Number(data.payment.amount) !== Number(totalAmount)) {
     throw new Error("Payment amount mismatch");
   }
 
-  /** 7️⃣ Transaction: Order + Payment */
+  /** 7️⃣ Transaction */
   const order = await prisma.$transaction(async (tx) => {
+    // Create order
     const createdOrder = await tx.order.create({
       data: {
-        comment: data.comment,
+        comment: data.comment || null,
         userId: user.id,
         shippingAddressId: shippingAddress.id,
         totalAmount,
@@ -304,15 +316,40 @@ export const createOrderServiceOpen = async (data: CreateOrderInputOpen) => {
       },
     });
 
+    // Create payment
     await tx.payment.create({
       data: {
         orderId: createdOrder.id,
         method: data.payment.method,
         txId: data.payment.txId?.trim() || null,
         amount: data.payment.amount,
-        bkashNumber: data.payment.bkashNumber,
+        bkashNumber: data.payment.bkashNumber || null,
       },
     });
+
+    /** ====================================
+     * Create Vendor Payouts
+     * Status = PROCESSING
+     * ==================================== */
+    for (const item of data.items) {
+      const product = products.find((p) => p.id === item.productId)!;
+
+      await tx.vendorPayout.create({
+        data: {
+          orderId: createdOrder.id,
+
+          shopId: product.shop.id,
+
+          shopOwnerId: product.shop.ownerId,
+
+          amount: product.shopPrice * item.quantity,
+
+          imageUrl: item.imageUrl,
+
+          status: VendorPayoutStatus.PROCESSING,
+        },
+      });
+    }
 
     return createdOrder;
   });

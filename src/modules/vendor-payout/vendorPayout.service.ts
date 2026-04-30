@@ -66,69 +66,104 @@ export const VendorPayoutService = {
     });
   },
 
-  async bulkPay(data: {
-    shopId: string;
-    orderIds: string[];
-    amount: number;
-    adminMessage?: string;
-  }) {
-    const { shopId, orderIds, adminMessage } = data;
+ async bulkPay(data: {
+  shopId: string;
+  orderIds: string[];
+  amount: number;
+  adminMessage?: string;
+}) {
+  const {
+    shopId,
+    orderIds,
+    amount,
+    adminMessage,
+  } = data;
 
-    // get shop owner
-    const shop = await prisma.shop.findUnique({
-      where: { id: shopId },
-      select: { ownerId: true },
-    });
+  // =====================================
+  // 1️⃣ Check Shop
+  // =====================================
+  const shop = await prisma.shop.findUnique({
+    where: { id: shopId },
+    select: {
+      id: true,
+      ownerId: true,
+    },
+  });
 
-    if (!shop) {
-      throw new Error("Shop not found");
-    }
+  if (!shop) {
+    throw new Error("Shop not found");
+  }
 
-    // get orders
-    const orders = await prisma.order.findMany({
+  // =====================================
+  // 2️⃣ Find Pending Payout Rows
+  // =====================================
+  const payouts =
+    await prisma.vendorPayout.findMany({
       where: {
-        id: { in: orderIds },
-      },
-      include: {
-        items: {
-          include: {
-            product: true,
-          },
+        shopId,
+        orderId: { in: orderIds },
+        status: {
+          in: [
+            VendorPayoutStatus.PENDING,
+            VendorPayoutStatus.PROCESSING,
+          ],
         },
       },
     });
 
-    if (!orders.length) {
-      throw new Error("Orders not found");
-    }
+  if (!payouts.length) {
+    throw new Error(
+      "No pending payouts found",
+    );
+  }
 
-    const payoutData = orders.map((order) => {
-      let orderAmount = 0;
+  // =====================================
+  // 3️⃣ Calculate Total
+  // =====================================
+  const totalAmount = payouts.reduce(
+    (sum, row) => sum + row.amount,
+    0,
+  );
 
-      order.items.forEach((item) => {
-        orderAmount += item.product.shopPrice * item.quantity;
-      });
+  // Optional verify frontend amount
+  if (Number(amount) !== Number(totalAmount)) {
+    throw new Error(
+      "Amount mismatch",
+    );
+  }
 
-      return {
+  // =====================================
+  // 4️⃣ Update Existing Rows
+  // =====================================
+  const result =
+    await prisma.vendorPayout.updateMany({
+      where: {
         shopId,
-        shopOwnerId: shop.ownerId,
-        orderId: order.id,
-        amount: orderAmount,
-        status: "PAID" as const,
-        adminMessage,
+        orderId: { in: orderIds },
+        status: {
+          in: [
+            VendorPayoutStatus.PENDING,
+            VendorPayoutStatus.PROCESSING,
+          ],
+        },
+      },
+      data: {
+        status:
+          VendorPayoutStatus.PAID,
+        adminMessage:
+          adminMessage || null,
         paidAt: new Date(),
-      };
+      },
     });
 
-    const result = await prisma.vendorPayout.createMany({
-      data: payoutData,
-    });
-
-    const totalAmount = payoutData.reduce((sum, p) => sum + p.amount, 0);
-
-    return {
-      count: result.count,
-      amount: totalAmount,
-    };
-  },
+  // =====================================
+  // 5️⃣ Response
+  // =====================================
+  return {
+    count: result.count,
+    amount: totalAmount,
+    message:
+      "Vendor payouts marked as PAID successfully",
+  };
+}
 };

@@ -58,13 +58,14 @@ export const DashboardController = {
     try {
       const role = req.user?.role!;
       const userId = req.user?.id!;
+
       const { startDate, endDate } = getDateRange(
         req.query as Record<string, unknown>,
       );
 
-      // -----------------------------------
+      // ======================================================
       // ADMIN DASHBOARD
-      // -----------------------------------
+      // ======================================================
       if (role === "ADMIN") {
         const [
           allOrdersAgg,
@@ -72,33 +73,35 @@ export const DashboardController = {
           deliveredItems,
           paidPayoutsAgg,
           pendingPayoutsAgg,
+          pendingPayoutsCount,
           ordersByStatus,
           totalProducts,
           totalUsers,
           newUsers,
           totalShops,
           newShops,
-          pendingPayoutsCount,
         ] = await Promise.all([
-          // Gross: all orders in range regardless of status
           prisma.order.aggregate({
-            where: { createdAt: { gte: startDate, lte: endDate } },
+            where: {
+              createdAt: { gte: startDate, lte: endDate },
+            },
             _sum: { totalAmount: true },
             _count: { id: true },
           }),
 
-          // DELIVERED orders in range — for count, avg, and delivery charge sum
           prisma.order.aggregate({
             where: {
               createdAt: { gte: startDate, lte: endDate },
               status: OrderStatus.DELIVERED,
             },
-            _sum: { totalAmount: true, deliveryCharge: true },
+            _sum: {
+              totalAmount: true,
+              deliveryCharge: true,
+            },
             _count: { id: true },
             _avg: { totalAmount: true },
           }),
 
-          // DELIVERED order items — product revenue (no delivery) and vendor cost
           prisma.orderItem.findMany({
             where: {
               order: {
@@ -110,17 +113,24 @@ export const DashboardController = {
               quantity: true,
               price: true,
               discountPrice: true,
-              product: { select: { shopSellPrice: true, shopPrice: true } },
+              product: {
+                select: {
+                  shopPrice: true,
+                  shopSellPrice: true,
+                },
+              },
             },
           }),
 
-          // Vendor payouts already paid (all time)
+          // Paid payouts
           prisma.vendorPayout.aggregate({
-            where: { status: VendorPayoutStatus.PAID },
+            where: {
+              status: VendorPayoutStatus.PAID,
+            },
             _sum: { amount: true },
           }),
 
-          // Vendor payouts still owed (all time — outstanding obligation)
+          // Pending + Processing payouts
           prisma.vendorPayout.aggregate({
             where: {
               status: {
@@ -130,31 +140,6 @@ export const DashboardController = {
             _sum: { amount: true },
           }),
 
-          // Order counts + amounts grouped by status in range
-          prisma.order.groupBy({
-            by: ["status"],
-            where: { createdAt: { gte: startDate, lte: endDate } },
-            _count: { id: true },
-            _sum: { totalAmount: true },
-          }),
-
-          prisma.product.count({ where: { isActive: true } }),
-
-          prisma.user.count(),
-
-          // Users who registered in the date range
-          prisma.user.count({
-            where: { createdAt: { gte: startDate, lte: endDate } },
-          }),
-
-          prisma.shop.count(),
-
-          // Shops created in the date range
-          prisma.shop.count({
-            where: { createdAt: { gte: startDate, lte: endDate } },
-          }),
-
-          // Total count of unsettled vendor payouts
           prisma.vendorPayout.count({
             where: {
               status: {
@@ -162,29 +147,56 @@ export const DashboardController = {
               },
             },
           }),
+
+          prisma.order.groupBy({
+            by: ["status"],
+            where: {
+              createdAt: { gte: startDate, lte: endDate },
+            },
+            _count: { id: true },
+            _sum: { totalAmount: true },
+          }),
+
+          prisma.product.count({
+            where: { isActive: true },
+          }),
+
+          prisma.user.count(),
+
+          prisma.user.count({
+            where: {
+              createdAt: { gte: startDate, lte: endDate },
+            },
+          }),
+
+          prisma.shop.count(),
+
+          prisma.shop.count({
+            where: {
+              createdAt: { gte: startDate, lte: endDate },
+            },
+          }),
         ]);
 
         const grossRevenue = allOrdersAgg._sum.totalAmount ?? 0;
+
         const totalDeliveryCharges =
           deliveredOrdersAgg._sum.deliveryCharge ?? 0;
 
-        // Product-only revenue: snapshot price × qty, no delivery charge
         const productRevenue = deliveredItems.reduce(
-          (sum, i) => sum + (i.discountPrice ?? i.price) * i.quantity,
+          (sum, item) =>
+            sum + (item.discountPrice ?? item.price) * item.quantity,
           0,
         );
 
-        // Vendor cost: shopSellPrice × qty for delivered items (vendor's earned portion)
         const vendorCost = deliveredItems.reduce(
-          (sum, i) => sum + i.product.shopPrice * i.quantity,
+          (sum, item) => sum + item.product.shopPrice * item.quantity,
           0,
         );
-
         const totalVendorPaid = paidPayoutsAgg._sum.amount ?? 0;
+
         const pendingPayoutsAmount = pendingPayoutsAgg._sum.amount ?? 0;
 
-        // Platform profit = vendorCost − (pendingPayouts + paidVendorPayouts)
-        // i.e. what vendors earned from orders minus what has already been paid / is queued
         const platformProfit = productRevenue - vendorCost;
 
         const avgOrderValue = +(
@@ -194,32 +206,32 @@ export const DashboardController = {
         return res.json({
           role: "ADMIN",
 
-          // Revenue
-          grossRevenue, // All order totalAmounts in range (incl. delivery, all statuses)
-          productRevenue, // DELIVERED items only, delivery excluded
-          totalDeliveryCharges, // Delivery charges from delivered orders
-          vendorCost, // shopSellPrice × qty (vendor's earned portion, delivered items)
-          totalVendorPaid, // Vendor payouts already sent
-          platformProfit, // vendorCost − pendingPayoutsAmount − totalVendorPaid
-          platformProfitMargin:
-            vendorCost > 0
-              ? +((platformProfit / vendorCost) * 100).toFixed(2)
-              : 0,
-          // Outstanding obligations to vendors
-          pendingPayoutsAmount: pendingPayoutsAmount - totalVendorPaid,
+          grossRevenue,
+          productRevenue,
+          totalDeliveryCharges,
+          vendorCost,
+
+          // Correct payout values
+          vendorPayoutsReceived: totalVendorPaid,
+          vendorPayoutsPending: pendingPayoutsAmount,
           pendingPayoutsCount,
 
-          // Order metrics in range
+          platformProfit,
+          platformProfitMargin:
+            productRevenue > 0
+              ? +((platformProfit / productRevenue) * 100).toFixed(2)
+              : 0,
+
           totalOrders: allOrdersAgg._count.id,
           deliveredOrders: deliveredOrdersAgg._count.id,
           avgOrderValue,
-          ordersByStatus: ordersByStatus.map((s) => ({
-            status: s.status,
-            count: s._count.id,
-            amount: s._sum.totalAmount ?? 0,
+
+          ordersByStatus: ordersByStatus.map((item) => ({
+            status: item.status,
+            count: item._count.id,
+            amount: item._sum.totalAmount ?? 0,
           })),
 
-          // Catalog & user counts
           totalProducts,
           totalUsers,
           newUsers,
@@ -228,9 +240,9 @@ export const DashboardController = {
         });
       }
 
-      // -----------------------------------
+      // ======================================================
       // SHOP OWNER DASHBOARD
-      // -----------------------------------
+      // ======================================================
       if (role === "SHOP_OWNER") {
         const shop = await prisma.shop.findFirst({
           where: { ownerId: userId },
@@ -249,49 +261,77 @@ export const DashboardController = {
           paidPayoutsAgg,
           pendingPayoutsAgg,
         ] = await Promise.all([
-          prisma.product.count({ where: { shopId: shop.id } }),
+          prisma.product.count({
+            where: { shopId: shop.id },
+          }),
 
           prisma.order.count({
             where: {
-              createdAt: { gte: startDate, lte: endDate },
-              items: { some: { product: { shopId: shop.id } } },
+              createdAt: {
+                gte: startDate,
+                lte: endDate,
+              },
+              items: {
+                some: {
+                  product: {
+                    shopId: shop.id,
+                  },
+                },
+              },
             },
           }),
 
           prisma.order.findMany({
             where: {
-              createdAt: { gte: startDate, lte: endDate },
-              items: { some: { product: { shopId: shop.id } } },
+              createdAt: {
+                gte: startDate,
+                lte: endDate,
+              },
+              items: {
+                some: {
+                  product: {
+                    shopId: shop.id,
+                  },
+                },
+              },
             },
             distinct: ["userId"],
             select: { userId: true },
           }),
 
-          // All order items in range for revenue + cost calculation
           prisma.orderItem.findMany({
             where: {
-              order: { createdAt: { gte: startDate, lte: endDate } },
-              product: { shopId: shop.id },
+              order: {
+                createdAt: {
+                  gte: startDate,
+                  lte: endDate,
+                },
+              },
+              product: {
+                shopId: shop.id,
+              },
             },
             select: {
               quantity: true,
               product: {
-                select: { shopPrice: true, shopSellPrice: true },
+                select: {
+                  shopPrice: true,
+                  shopSellPrice: true,
+                },
               },
             },
           }),
 
-          // Payouts admin already sent to this shop in range
+          // Paid payouts
           prisma.vendorPayout.aggregate({
             where: {
               shopId: shop.id,
-              createdAt: { gte: startDate, lte: endDate },
               status: VendorPayoutStatus.PAID,
             },
             _sum: { amount: true },
           }),
 
-          // Payouts still owed to this shop (outstanding)
+          // Pending payouts
           prisma.vendorPayout.aggregate({
             where: {
               shopId: shop.id,
@@ -302,38 +342,37 @@ export const DashboardController = {
             _sum: { amount: true },
           }),
         ]);
+        console.log(paidPayoutsAgg._sum.amount);
 
-        // shopSellPrice = what shop charges → revenue
         const totalRevenue = orderItems.reduce(
           (sum, item) => sum + item.product.shopSellPrice * item.quantity,
           0,
         );
-        // shopPrice = inventory cost price
+
         const totalCost = orderItems.reduce(
           (sum, item) => sum + item.product.shopPrice * item.quantity,
           0,
         );
+
         const grossProfit = totalRevenue - totalCost;
 
         return res.json({
           role: "SHOP_OWNER",
 
-          // Revenue (shopSellPrice × qty for orders in range)
           totalRevenue,
           totalCost,
           grossProfit,
+
           profitMargin:
             totalRevenue > 0
               ? +((grossProfit / totalRevenue) * 100).toFixed(2)
               : 0,
+          // Correct payout values
 
-          // Payout info from admin
           vendorPayoutsReceived: paidPayoutsAgg._sum.amount ?? 0,
-          vendorPayoutsPending:
-            (pendingPayoutsAgg._sum.amount ?? 0) -
-            (paidPayoutsAgg._sum.amount ?? 0),
 
-          // Counts
+          vendorPayoutsPending: pendingPayoutsAgg._sum.amount ?? 0,
+
           totalOrders,
           totalProducts,
           uniqueCustomers: uniqueCustomers.length,
@@ -341,10 +380,15 @@ export const DashboardController = {
         });
       }
 
-      return res.json({ message: "No dashboard data" });
+      return res.json({
+        message: "No dashboard data",
+      });
     } catch (error) {
       console.error(error);
-      res.status(500).json({ message: "Failed to fetch dashboard stats" });
+
+      res.status(500).json({
+        message: "Failed to fetch dashboard stats",
+      });
     }
   },
 

@@ -32,7 +32,7 @@ export const VendorPayoutController = {
 
     res.json({
       success: true,
-      message: "Bulk payout completed",
+      adminMessage: "Bulk payout completed",
       ...result,
     });
   },
