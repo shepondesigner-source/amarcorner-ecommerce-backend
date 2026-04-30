@@ -9,12 +9,22 @@ export const findAll = (options: { isActive?: string }) => {
     return prisma.category.findMany({
       where: {
         isActive: true,
+        subCategories: {
+          some: {
+            isActive: true,
+          },
+        },
       },
       include: {
-        subCategories: true,
+        subCategories: {
+          where: {
+            isActive: true,
+          },
+        },
       },
     });
   }
+
   return prisma.category.findMany({
     include: {
       subCategories: true,

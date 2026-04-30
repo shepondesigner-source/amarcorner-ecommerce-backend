@@ -137,7 +137,7 @@ export class ProductRepository {
 
     const [items, total] = await prisma.$transaction([
       prisma.product.findMany({
-        where: { stock: 0 }, // Find products with zero stock
+        where: { stock: 0, isActive: true, category: { isActive: true } }, // Find products with zero stock
         skip,
         take,
         orderBy: [{ stock: "desc" }, { createdAt: "desc" }],
@@ -161,8 +161,9 @@ export class ProductRepository {
     return prisma.product.findMany({
       where: {
         isFeatured: true,
-        isActive: true,
         stock: { gt: 0 },
+        isActive: true,
+        category: { isActive: true },
       },
       orderBy: [
         {
@@ -188,6 +189,7 @@ export class ProductRepository {
         where: {
           isFeatured: false,
           isActive: true,
+          category: { isActive: true },
           stock: { gt: 0 },
         },
         select: {
@@ -237,7 +239,7 @@ export class ProductRepository {
   }
   async findByIdRelated(id: string) {
     return prisma.product.findFirst({
-      where: { id },
+      where: { id, isActive: true, category: { isActive: true } },
 
       include: {
         sizes: {
@@ -260,6 +262,8 @@ export class ProductRepository {
         id: { in: productIds },
         discountPrice: { not: null },
         stock: { gt: 0 },
+        isActive: true,
+        category: { isActive: true },
       },
       select: {
         id: true,
@@ -301,6 +305,8 @@ export class ProductRepository {
           mode: "insensitive", // case-insensitive search
         },
         stock: { gt: 0 },
+        isActive: true,
+        category: { isActive: true },
       },
       select: {
         name: true,
@@ -320,6 +326,7 @@ export class ProductRepository {
         where: {
           slug: slug,
           isActive: true,
+          category: { isActive: true },
           stock: { gt: 0 },
         },
         select: {
