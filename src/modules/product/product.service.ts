@@ -1,3 +1,4 @@
+import { Product } from "../../../generated/prisma";
 import { prisma } from "../../config/prisma";
 import {
   deleteFromCloudinaryByUrl,
@@ -57,7 +58,6 @@ export class ProductService {
       const shops = await prisma.shop.findMany({
         where: {
           ownerId: user.id,
-          
         },
         select: {
           id: true,
@@ -124,15 +124,14 @@ export class ProductService {
       },
     };
   }
-   async findPaginatedStockout( query: any) {
+  async findPaginatedStockout(query: any) {
     const page = Number(query.page) || 1;
     const limit = Number(query.limit) || 10;
     const skip = (page - 1) * limit;
-   
+
     const result = await this.repo.findStockoutProduct({
       skip,
       take: limit,
-    
     });
 
     return {
@@ -313,25 +312,63 @@ export class ProductService {
     return product;
   }
 
-  async getRelatedProducts(id: string) {
-    // 1️⃣ get current product
+  async getRelatedProducts(id: string): Promise<Product[]> {
     const product = await this.repo.findById(id);
 
     if (!product) {
       throw new Error("Product not found");
     }
 
-    // 2️⃣ find related
-    const relatedProducts = await prisma.product.findMany({
-      where: {
-        categoryId: product.categoryId,
-        id: {
-          not: id, // exclude current product
+    let relatedProducts: Product[] = [];
+
+    // 1️⃣ Same subcategory first
+    if (product.subCategoryId) {
+      relatedProducts = await prisma.product.findMany({
+        where: {
+          subCategoryId: product.subCategoryId,
+          id: {
+            not: id,
+          },
+          isActive: true,
         },
-        isActive: true,
-      },
-      take: 8, // limit
-    });
+        orderBy: [
+          { sold: "desc" },
+          {
+            createdAt: "desc",
+          },
+        ],
+        take: 8,
+      });
+    }
+
+    // 2️⃣ Fallback category
+    if (relatedProducts.length < 8) {
+      const remaining: number = 8 - relatedProducts.length;
+
+      const excludeIds: string[] = [
+        id,
+        ...relatedProducts.map((item: Product): string => item.id),
+      ];
+
+      const moreProducts: Product[] = await prisma.product.findMany({
+        where: {
+          categoryId: product.categoryId,
+          id: {
+            notIn: excludeIds,
+          },
+          isActive: true,
+        },
+        orderBy: [
+          { sold: "desc" },
+          {
+            createdAt: "desc",
+          },
+        ],
+        take: remaining,
+      });
+
+      relatedProducts = [...relatedProducts, ...moreProducts];
+    }
 
     return relatedProducts;
   }
