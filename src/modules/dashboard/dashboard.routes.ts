@@ -10,42 +10,47 @@ router.get(
   "/stats",
   authenticate,
 
-  asyncHandler(DashboardController.stats)
+  asyncHandler(DashboardController.stats),
 );
 router.get(
   "/revenue",
   authenticate,
 
-  asyncHandler(DashboardController.revenue)
+  asyncHandler(DashboardController.revenue),
 );
 router.get(
   "/orders",
   authenticate,
 
-  asyncHandler(DashboardController.orders)
+  asyncHandler(DashboardController.orders),
 );
 router.get(
   "/categories",
   authenticate,
 
-  asyncHandler(DashboardController.categories)
+  asyncHandler(DashboardController.categories),
 );
 router.get(
   "/top-products",
   authenticate,
 
-  asyncHandler(DashboardController.topProducts)
+  asyncHandler(DashboardController.topProducts),
 );
 router.get(
   "/recent-orders",
   authenticate,
-  asyncHandler(DashboardController.recentOrders)
+  asyncHandler(DashboardController.recentOrders),
+);
+router.get(
+  "/pending-orders",
+  authenticate,
+  asyncHandler(DashboardController.totalPendingOrders),
 );
 
 router.get(
   "/shop-analytic/:shopId",
   // authenticate,
-  asyncHandler(DashboardController.shopTotalOrderCount)
+  asyncHandler(DashboardController.shopTotalOrderCount),
 );
 
 export default router;

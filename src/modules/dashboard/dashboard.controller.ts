@@ -990,4 +990,18 @@ export const DashboardController = {
       offers: offerStats,
     });
   },
+  totalPendingOrders: async (req: Request, res: Response) => {
+    const filter = getShopFilter(req.user?.id!, req.user?.role!);
+
+    try {
+      const count = await prisma.order.count({
+        where: { status: OrderStatus.PENDING, ...filter },
+      });
+
+      res.json({ pendingOrders: count });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Failed to fetch pending orders count" });
+    }
+  }
 };
