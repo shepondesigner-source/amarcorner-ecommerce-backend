@@ -27,4 +27,8 @@ export class AuthRepository {
   async findUserByEmail(email: string): Promise<User | null> {
     return prisma.user.findUnique({ where: { email } });
   }
+
+   async findUserByPhone(phone: string): Promise<User | null> {
+    return prisma.user.findUnique({ where: { phone } });
+  }
 }

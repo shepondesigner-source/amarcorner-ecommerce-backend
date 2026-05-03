@@ -21,22 +21,30 @@ export class AuthService {
     name: string;
     email: string;
     password: string;
-    phone?: string;
+    phone: string;
     role: Role;
   }) {
     const existing = await this.repo.findUserByEmail(data.email);
     if (existing) throw new BadRequestError("Email already exists");
 
+    const existingByPhone = await this.repo.findUserByPhone(data.phone);
     const hashedPassword = await bcrypt.hash(data.password, 10);
-    const user = await this.repo.createUser({
-      ...data,
-      password: hashedPassword,
-    });
+
+    let user: Awaited<ReturnType<typeof this.repo.createUser>>;
+
+    if (existingByPhone) {
+      user = await prisma.user.update({
+        where: { id: existingByPhone.id },
+        data: { email: data.email, name: data.name, role: data.role, password: hashedPassword },
+      });
+    } else {
+      user = await this.repo.createUser({ ...data, password: hashedPassword });
+    }
 
     const accessToken = signAccessToken({ id: user.id, role: user.role });
     const refreshToken = signRefreshToken({ id: user.id, role: user.role });
     try {
-      if (user?.email) {
+      if (user.email) {
         await MailService.send({
           to: user.email,
           subject: `Welcome`,
@@ -44,7 +52,7 @@ export class AuthService {
         });
       }
     } catch (err) {
-      console.error("Failed to send order email:", err);
+      console.error("Failed to send welcome email:", err);
     }
     return { accessToken, refreshToken };
   }
