@@ -13,7 +13,9 @@ export class ReviewRepository {
   getProductReview(productId: string) {
     return prisma.review.findMany({
       where: { productId: productId },
+      
       include: {
+        
         user: {
           select: {
             name: true,
