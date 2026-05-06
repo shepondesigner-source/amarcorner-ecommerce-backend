@@ -52,7 +52,7 @@ export class ProductService {
 
   async findPaginated(user: UserCookie, query: any) {
     const page = Number(query.page) || 1;
-    const limit = Number(query.limit) || 10;
+    const limit = Number(query.limit) || 15;
     const skip = (page - 1) * limit;
     if (user?.role === "SHOP_OWNER") {
       const shops = await prisma.shop.findMany({
@@ -126,7 +126,7 @@ export class ProductService {
   }
   async findPaginatedStockout(query: any) {
     const page = Number(query.page) || 1;
-    const limit = Number(query.limit) || 10;
+    const limit = Number(query.limit) || 15;
     const skip = (page - 1) * limit;
 
     const result = await this.repo.findStockoutProduct({
@@ -146,7 +146,7 @@ export class ProductService {
   }
   async findVendorPaginated(user: UserCookie, query: any) {
     const page = Number(query.page) || 1;
-    const limit = Number(query.limit) || 10;
+    const limit = Number(query.limit) || 15;
     const skip = (page - 1) * limit;
     if (user.role === "SHOP_OWNER") {
       const shops = await prisma.shop.findMany({
@@ -223,7 +223,7 @@ export class ProductService {
 
   async newProduct(query: any) {
     const page = Number(query.page) || 1;
-    const limit = Number(query.limit) || 10;
+    const limit = Number(query.limit) || 15;
     const skip = (page - 1) * limit;
 
     const result = await this.repo.newProduct(skip, limit);
