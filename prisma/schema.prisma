@@ -347,3 +347,14 @@ model Review {
   productId String
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
+
+model Complain {
+  id      Int    @id @default(autoincrement())
+  email   String
+  name    String
+  phone   String
+  message String
+
+  @@index([email])
+  @@index([phone])
+}

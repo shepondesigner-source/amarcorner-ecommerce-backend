@@ -17,6 +17,7 @@ import dashboardRoutes from "./modules/dashboard/dashboard.routes";
 import vendorPaymentRoutes from "./modules/vendor-payout/vendorPayout.route";
 
 import otpRoutes from "./modules/otp/otp.routes";
+import complainRoutes from "./modules/complain/complain.route";
 
 const router = Router();
 
@@ -57,6 +58,8 @@ router.use("/payments", paymentRoutes);
 router.use("/sizes", sizeRoutes);
 
 router.use("/vendor-pay", vendorPaymentRoutes);
+
+router.use("/complains", complainRoutes);
 
 // Health check route
 router.get("/health", (_, res) => {
