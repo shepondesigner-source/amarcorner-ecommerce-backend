@@ -18,7 +18,7 @@ import vendorPaymentRoutes from "./modules/vendor-payout/vendorPayout.route";
 
 import otpRoutes from "./modules/otp/otp.routes";
 import complainRoutes from "./modules/complain/complain.route";
-
+import reviewRoutes from "./modules/review/review.route";
 const router = Router();
 
 router.use("/auth", authRoutes);
@@ -60,6 +60,7 @@ router.use("/sizes", sizeRoutes);
 router.use("/vendor-pay", vendorPaymentRoutes);
 
 router.use("/complains", complainRoutes);
+router.use("/review", reviewRoutes);
 
 // Health check route
 router.get("/health", (_, res) => {

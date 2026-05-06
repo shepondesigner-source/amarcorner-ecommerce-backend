@@ -8,7 +8,12 @@ export class ReviewController {
 
   create = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const review = await this.service.createReview(req.body);
+      const userId = req.user!.id;
+      const bodyData = {
+        ...req.body,
+        userId,
+      };
+      const review = await this.service.createReview(bodyData);
 
       res.status(201).json({
         success: true,
@@ -22,7 +27,7 @@ export class ReviewController {
 
   update = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { id } = req.params
+      const { id } = req.params;
 
       const review = await this.service.updateReview(id, req.body);
 

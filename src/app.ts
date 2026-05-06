@@ -13,8 +13,8 @@ const app: Application = express();
 const allowedOrigins = config.frontendUrl.split(",");
 // example: FRONTEND_URL=http://localhost:3000,https://yourdomain.com
 const limiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 15 min
-  max: 500, // max requests per IP
+  windowMs: 10 * 60 * 1000, // 15 min
+  max: 300, // max requests per IP
   standardHeaders: true,
   legacyHeaders: false,
 
