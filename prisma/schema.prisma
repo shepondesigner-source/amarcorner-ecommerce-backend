@@ -342,6 +342,7 @@ model oTP {
 model Review {
   id        String  @id @default(cuid())
   comment   String
+  rating    Int     @default(5)
   userId    String?
   user      User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
   productId String
