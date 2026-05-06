@@ -9,6 +9,19 @@ export class ReviewRepository {
   update(id: string, data: CreateReview) {
     return prisma.review.update({ where: { id }, data });
   }
+
+  getProductReview(productId: string) {
+    return prisma.review.findMany({
+      where: { productId: productId },
+      include: {
+        user: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
+  }
   delete(id: string) {
     return prisma.review.delete({ where: { id } });
   }

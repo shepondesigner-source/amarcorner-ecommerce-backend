@@ -9,18 +9,21 @@ import { authorize } from "../../core/middlewares/authorize.middleware";
 const router = Router();
 const controller = new ReviewController();
 
+router.get("/product/:id", asyncHandler(controller.getProductReview));
+
 router.post("/", authenticate, asyncHandler(controller.create));
+
 router.put(
   "/",
   authenticate,
   authorize("ADMIN"),
-  asyncHandler(controller.update)
+  asyncHandler(controller.update),
 );
 router.delete(
   "/:id",
   authenticate,
   authorize("ADMIN"),
-  asyncHandler(controller.delete)
+  asyncHandler(controller.delete),
 );
 
 export default router;

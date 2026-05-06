@@ -10,7 +10,10 @@ export class ReviewService {
     const review = await this.repo.create(data);
     return review;
   }
-
+  async productReview(id: string) {
+    const review = await this.repo.getProductReview(id);
+    return review;
+  }
   async updateReview(id: string, data: CreateReview) {
     const review = await this.repo.update(id, data);
     return review;

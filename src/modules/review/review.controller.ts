@@ -26,6 +26,23 @@ export class ReviewController {
     }
   };
 
+  getProductReview=async(req: Request, res: Response, next: NextFunction)=>{
+ try {
+      const params = req.params;
+      
+
+      const review = await this.service.productReview(params.id);
+
+      res.status(200).json({
+        success: true,
+        message: "Success",
+        data: review,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   update = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
