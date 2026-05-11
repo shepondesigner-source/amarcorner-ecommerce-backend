@@ -138,6 +138,8 @@ model Category {
   subCategories SubCategory[]
   products      Product[]
 
+  sortOrder Int @default(1)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -151,8 +153,9 @@ model SubCategory {
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
-  products Product[]
-  isActive Boolean   @default(true)
+  products  Product[]
+  isActive  Boolean   @default(true)
+  sortOrder Int       @default(1)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

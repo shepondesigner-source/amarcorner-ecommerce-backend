@@ -9,6 +9,7 @@ export const findAll = () => {
     include: {
       category: true,
     },
+    orderBy: { sortOrder: "asc" },
   });
 };
 

@@ -3,6 +3,12 @@ import { z } from "zod";
 /**
  * CREATE SubCategory
  */
+const sortOrderField = z
+  .preprocess(
+    (val) => (val !== undefined ? Number(val) : 1),
+    z.number().int().min(1),
+  )
+  .optional();
 export const createSubCategorySchema = z.object({
   body: z.object({
     name: z.string().min(2, "Name must be at least 2 characters"),
@@ -10,6 +16,7 @@ export const createSubCategorySchema = z.object({
     isActive: z
       .preprocess((val) => val === "true" || val === true, z.boolean())
       .optional(),
+    sortOrder: sortOrderField,
   }),
 });
 
@@ -26,5 +33,6 @@ export const updateSubCategorySchema = z.object({
     isActive: z
       .preprocess((val) => val === "true" || val === true, z.boolean())
       .optional(),
+    sortOrder: sortOrderField,
   }),
 });

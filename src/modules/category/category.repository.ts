@@ -22,6 +22,7 @@ export const findAll = (options: { isActive?: string }) => {
           },
         },
       },
+      orderBy: { sortOrder: "asc" },
     });
   }
 
@@ -29,6 +30,7 @@ export const findAll = (options: { isActive?: string }) => {
     include: {
       subCategories: true,
     },
+    orderBy: { sortOrder: "asc" },
   });
 };
 
@@ -36,6 +38,7 @@ export const findById = (id: string) => {
   return prisma.category.findUnique({
     where: { id },
     include: { subCategories: true },
+    
   });
 };
 

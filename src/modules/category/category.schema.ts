@@ -1,5 +1,8 @@
 import { z } from "zod";
-import { is } from "zod/v4/locales";
+
+const sortOrderField = z
+  .preprocess((val) => (val !== undefined ? Number(val) : 1), z.number().int().min(1))
+  .optional();
 
 export const createCategorySchema = z.object({
   body: z.object({
@@ -7,6 +10,7 @@ export const createCategorySchema = z.object({
     isActive: z
       .preprocess((val) => val === "true" || val === true, z.boolean())
       .optional(),
+    sortOrder: sortOrderField,
   }),
 });
 
@@ -16,6 +20,7 @@ export const updateCategorySchema = z.object({
     isActive: z
       .preprocess((val) => val === "true" || val === true, z.boolean())
       .optional(),
+    sortOrder: sortOrderField,
   }),
   params: z.object({
     id: z.string(),
