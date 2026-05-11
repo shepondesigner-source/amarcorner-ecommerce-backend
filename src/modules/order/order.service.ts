@@ -382,7 +382,7 @@ export const getOrderListService = async (
     /** SHOP_OWNER only see own shop orders */
     ...(userRole === "SHOP_OWNER" && {
       status: {
-        not: "CANCELLED",
+        notIn: ["CANCELLED", "GIFT"],
       },
       items: {
         some: {
@@ -540,7 +540,12 @@ export const updateOrderService = async (
       where: { id: orderId },
       data: {
         status: "CANCELLED",
-        vendorPayouts: { updateMany: { where: { orderId }, data: { status: VendorPayoutStatus.CANCELLED } } },
+        vendorPayouts: {
+          updateMany: {
+            where: { orderId },
+            data: { status: VendorPayoutStatus.CANCELLED },
+          },
+        },
       },
     });
   }
@@ -571,9 +576,19 @@ export const updateOrderService = async (
 
     const vendorPayoutUpdate =
       payload.status === "CONFIRMED"
-        ? { updateMany: { where: { orderId }, data: { status: VendorPayoutStatus.PROCESSING } } }
+        ? {
+            updateMany: {
+              where: { orderId },
+              data: { status: VendorPayoutStatus.PROCESSING },
+            },
+          }
         : payload.status === "CANCELLED"
-          ? { updateMany: { where: { orderId }, data: { status: VendorPayoutStatus.CANCELLED } } }
+          ? {
+              updateMany: {
+                where: { orderId },
+                data: { status: VendorPayoutStatus.CANCELLED },
+              },
+            }
           : undefined;
 
     return prisma.order.update({
@@ -588,9 +603,19 @@ export const updateOrderService = async (
   /* ================= ADMIN ================= */
   const adminVendorPayoutUpdate =
     payload.status === "CONFIRMED"
-      ? { updateMany: { where: { orderId }, data: { status: VendorPayoutStatus.PROCESSING } } }
+      ? {
+          updateMany: {
+            where: { orderId },
+            data: { status: VendorPayoutStatus.PROCESSING },
+          },
+        }
       : payload.status === "CANCELLED"
-        ? { updateMany: { where: { orderId }, data: { status: VendorPayoutStatus.CANCELLED } } }
+        ? {
+            updateMany: {
+              where: { orderId },
+              data: { status: VendorPayoutStatus.CANCELLED },
+            },
+          }
         : undefined;
 
   return prisma.order.update({
