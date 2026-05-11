@@ -19,6 +19,7 @@ enum OrderStatus {
   SHIPPED
   DELIVERED
   CANCELLED
+  GIFT
 }
 
 enum PathaoStatus {
