@@ -336,7 +336,7 @@ export const DashboardController = {
             where: {
               shopId: shop.id,
               status: {
-                in: [VendorPayoutStatus.PENDING, VendorPayoutStatus.PROCESSING],
+                in: [VendorPayoutStatus.PROCESSING],
               },
             },
             _sum: { amount: true },
