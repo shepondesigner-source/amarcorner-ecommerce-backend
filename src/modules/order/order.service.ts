@@ -661,6 +661,72 @@ export const getOpenOrderService = async (orderId: string) => {
   return order;
 };
 
+export const trackOrderService = async (
+  orderNumber: number,
+  phone: string,
+) => {
+  const order = await prisma.order.findFirst({
+    where: {
+      orderNumber,
+      shippingAddress: {
+        phone,
+      },
+    },
+    select: {
+      orderNumber: true,
+      status: true,
+      totalAmount: true,
+      deliveryCharge: true,
+      comment: true,
+      createdAt: true,
+      updatedAt: true,
+      shippingAddress: {
+        select: {
+          name: true,
+          phone: true,
+          district: true,
+          address: true,
+        },
+      },
+      payment: {
+        select: {
+          method: true,
+          status: true,
+          amount: true,
+        },
+      },
+      items: {
+        select: {
+          quantity: true,
+          price: true,
+          discountPrice: true,
+          imageUrl: true,
+          product: {
+            select: {
+              name: true,
+              slug: true,
+            },
+          },
+          size: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!order) {
+    throw new AppError(
+      "Order not found. Please check your order number and phone number.",
+      404,
+    );
+  }
+
+  return order;
+};
+
 export const deleteOrderService = async (orderId: string) => {
   try {
     const orderDelete = await prisma.order.delete({ where: { id: orderId } });

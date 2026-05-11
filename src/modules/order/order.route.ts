@@ -11,6 +11,7 @@ import {
   getOpenOrderController,
   getOrderListController,
   pathaoOrderController,
+  trackOrderController,
   updateOrderController,
   updateOrderPriceController,
 } from "./order.controller";
@@ -28,6 +29,7 @@ router.post(
 );
 
 router.post("/user", asyncHandler(createOrderControllerOpen));
+router.get("/track", asyncHandler(trackOrderController));
 router.post("/pathao", asyncHandler(pathaoOrderController));
 router.get("/", authenticate, asyncHandler(getOrderListController));
 router.get("/:id", asyncHandler(getOpenOrderController));

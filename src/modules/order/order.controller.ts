@@ -3,6 +3,7 @@ import {
   createOrderSchema,
   getOrderListSchema,
   getOrderSchema,
+  trackOrderSchema,
   updateOrderAmountSchema,
   updateOrderSchema,
 } from "./order.schema";
@@ -12,6 +13,7 @@ import {
   deleteOrderService,
   getOpenOrderService,
   getOrderListService,
+  trackOrderService,
   updateOrderAmountService,
   updateOrderService,
 } from "./order.service";
@@ -165,4 +167,18 @@ export const pathaoOrderController = async (req: Request, res: Response) => {
   const order = await createPathaoOrder(req.body.id);
 
   res.status(200).json({ message: "Pathao order created successfully" });
+};
+
+export const trackOrderController = async (req: Request, res: Response) => {
+  const parsed = trackOrderSchema.parse({ query: req.query });
+
+  const order = await trackOrderService(
+    Number(parsed.query.orderNumber),
+    parsed.query.phone,
+  );
+
+  res.status(200).json({
+    success: true,
+    data: order,
+  });
 };

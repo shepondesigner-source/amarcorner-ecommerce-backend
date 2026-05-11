@@ -79,3 +79,10 @@ export const getOrderSchema = z.object({
     id: z.cuid(), // Order ID from URL
   }),
 });
+
+export const trackOrderSchema = z.object({
+  query: z.object({
+    orderNumber: z.string().regex(/^\d+$/, "Order number must be numeric"),
+    phone: z.string().min(6),
+  }),
+});
