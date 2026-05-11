@@ -346,7 +346,7 @@ export const createOrderServiceOpen = async (data: CreateOrderInputOpen) => {
 
           imageUrl: item.imageUrl,
 
-          status: VendorPayoutStatus.PROCESSING,
+          status: VendorPayoutStatus.PENDING,
         },
       });
     }
@@ -538,7 +538,10 @@ export const updateOrderService = async (
 
     return prisma.order.update({
       where: { id: orderId },
-      data: { status: "CANCELLED" },
+      data: {
+        status: "CANCELLED",
+        vendorPayouts: { updateMany: { where: { orderId }, data: { status: VendorPayoutStatus.CANCELLED } } },
+      },
     });
   }
 
@@ -566,16 +569,30 @@ export const updateOrderService = async (
 
     if (!ownsProduct) throw new AppError("Not your order", 403);
 
-    // SHOP OWNER can ONLY update status
+    const vendorPayoutUpdate =
+      payload.status === "CONFIRMED"
+        ? { updateMany: { where: { orderId }, data: { status: VendorPayoutStatus.PROCESSING } } }
+        : payload.status === "CANCELLED"
+          ? { updateMany: { where: { orderId }, data: { status: VendorPayoutStatus.CANCELLED } } }
+          : undefined;
+
     return prisma.order.update({
       where: { id: orderId },
       data: {
         status: payload.status,
+        vendorPayouts: vendorPayoutUpdate,
       },
     });
   }
 
   /* ================= ADMIN ================= */
+  const adminVendorPayoutUpdate =
+    payload.status === "CONFIRMED"
+      ? { updateMany: { where: { orderId }, data: { status: VendorPayoutStatus.PROCESSING } } }
+      : payload.status === "CANCELLED"
+        ? { updateMany: { where: { orderId }, data: { status: VendorPayoutStatus.CANCELLED } } }
+        : undefined;
+
   return prisma.order.update({
     where: { id: orderId },
     data: {
@@ -586,6 +603,7 @@ export const updateOrderService = async (
             update: { status: payload.paymentStatus },
           }
         : undefined,
+      vendorPayouts: adminVendorPayoutUpdate,
     },
   });
 };
