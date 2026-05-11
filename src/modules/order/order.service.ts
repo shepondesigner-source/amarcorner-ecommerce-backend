@@ -575,7 +575,7 @@ export const updateOrderService = async (
     if (!ownsProduct) throw new AppError("Not your order", 403);
 
     const vendorPayoutUpdate =
-      payload.status === "CONFIRMED"
+      payload.status === "CONFIRMED" || payload.status === "SHIPPED"
         ? {
             updateMany: {
               where: { orderId },
