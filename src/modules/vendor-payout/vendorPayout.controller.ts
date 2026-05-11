@@ -38,14 +38,18 @@ export const VendorPayoutController = {
   },
 
   findAll: async (req: Request, res: Response) => {
-    console.log(req?.user);
     try {
-      const payouts = await VendorPayoutService.findAll(
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+
+      const result = await VendorPayoutService.findAll(
         req.user?.id!,
         req.user?.role!,
+        page,
+        limit,
       );
 
-      res.json(payouts);
+      res.json(result);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch payouts" });
     }

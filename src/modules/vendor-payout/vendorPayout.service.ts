@@ -13,7 +13,7 @@ export const VendorPayoutService = {
     });
   },
 
-  async findAll(userId: string, role: Role) {
+  async findAll(userId: string, role: Role, page = 1, limit = 10) {
     const where =
       role === "SHOP_OWNER"
         ? {
@@ -24,16 +24,33 @@ export const VendorPayoutService = {
           }
         : {};
 
-    return prisma.vendorPayout.findMany({
-      where,
-      include: {
-        shop: true,
-        order: true,
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      prisma.vendorPayout.findMany({
+        where,
+        include: {
+          shop: true,
+          order: true,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        skip,
+        take: limit,
+      }),
+      prisma.vendorPayout.count({ where }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+    };
   },
 
   async findById(id: string) {
