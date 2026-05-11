@@ -134,7 +134,7 @@ export const DashboardController = {
           prisma.vendorPayout.aggregate({
             where: {
               status: {
-                in: [VendorPayoutStatus.PENDING, VendorPayoutStatus.PROCESSING],
+                in: [VendorPayoutStatus.PROCESSING],
               },
             },
             _sum: { amount: true },
@@ -1003,5 +1003,5 @@ export const DashboardController = {
       console.error(err);
       res.status(500).json({ error: "Failed to fetch pending orders count" });
     }
-  }
+  },
 };
