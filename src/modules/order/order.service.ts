@@ -381,6 +381,9 @@ export const getOrderListService = async (
 
     /** SHOP_OWNER only see own shop orders */
     ...(userRole === "SHOP_OWNER" && {
+      status: {
+        not: "CANCELLED",
+      },
       items: {
         some: {
           product: {
