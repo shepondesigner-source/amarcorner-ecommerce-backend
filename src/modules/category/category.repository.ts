@@ -20,17 +20,28 @@ export const findAll = (options: { isActive?: string }) => {
           where: {
             isActive: true,
           },
+          orderBy: {
+            sortOrder: "asc",
+          },
         },
       },
-      orderBy: { sortOrder: "asc" },
+      orderBy: {
+        sortOrder: "asc",
+      },
     });
   }
 
   return prisma.category.findMany({
     include: {
-      subCategories: true,
+      subCategories: {
+        orderBy: {
+          sortOrder: "asc",
+        },
+      },
     },
-    orderBy: { sortOrder: "asc" },
+    orderBy: {
+      sortOrder: "asc",
+    },
   });
 };
 
