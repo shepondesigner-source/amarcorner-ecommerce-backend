@@ -497,8 +497,39 @@ export const getOrderListService = async (
     }),
   ]);
 
+  /** Total orders + total item quantity per user (all-time) */
+  const userIds = [...new Set(orders.map((o) => o.userId))];
+
+  const userStats = await prisma.$queryRaw<
+    { userId: string; totalOrders: bigint; totalItems: bigint }[]
+  >(
+    Prisma.sql`
+      SELECT
+        o."userId",
+        COUNT(DISTINCT o.id)          AS "totalOrders",
+        COALESCE(SUM(oi.quantity), 0) AS "totalItems"
+      FROM "Order" o
+      LEFT JOIN "OrderItem" oi ON oi."orderId" = o.id
+      WHERE o."userId" IN (${Prisma.join(userIds)})
+      GROUP BY o."userId"
+    `,
+  );
+
+  const statsMap = Object.fromEntries(
+    userStats.map((r) => [
+      r.userId,
+      { totalOrders: Number(r.totalOrders), totalItems: Number(r.totalItems) },
+    ]),
+  );
+
+  const ordersWithUserCount = orders.map((o) => ({
+    ...o,
+    userTotalOrders: statsMap[o.userId]?.totalOrders ?? 0,
+    userTotalItems: statsMap[o.userId]?.totalItems ?? 0,
+  }));
+
   return {
-    data: orders,
+    data: ordersWithUserCount,
     meta: {
       total,
       page,
