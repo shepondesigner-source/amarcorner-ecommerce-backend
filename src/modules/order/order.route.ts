@@ -8,6 +8,7 @@ import {
   createOrderController,
   createOrderControllerOpen,
   deleteOrderController,
+  exportContactsController,
   getOpenOrderController,
   getOrderListController,
   pathaoOrderController,
@@ -30,6 +31,7 @@ router.post(
 
 router.post("/user", asyncHandler(createOrderControllerOpen));
 router.get("/track", asyncHandler(trackOrderController));
+router.get("/contacts/export", authenticate, authorize("ADMIN"), asyncHandler(exportContactsController));
 router.post("/pathao", asyncHandler(pathaoOrderController));
 router.get("/", authenticate, asyncHandler(getOrderListController));
 router.get("/:id", asyncHandler(getOpenOrderController));

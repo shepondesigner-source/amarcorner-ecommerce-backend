@@ -11,6 +11,7 @@ import {
   createOrderService,
   createOrderServiceOpen,
   deleteOrderService,
+  exportContactsService,
   getOpenOrderService,
   getOrderListService,
   trackOrderService,
@@ -167,6 +168,13 @@ export const pathaoOrderController = async (req: Request, res: Response) => {
   const order = await createPathaoOrder(req.body.id);
 
   res.status(200).json({ message: "Pathao order created successfully" });
+};
+
+export const exportContactsController = async (_req: Request, res: Response) => {
+  const vcf = await exportContactsService();
+  res.setHeader("Content-Type", "text/vcard; charset=utf-8");
+  res.setHeader("Content-Disposition", 'attachment; filename="customers.vcf"');
+  res.send(vcf);
 };
 
 export const trackOrderController = async (req: Request, res: Response) => {

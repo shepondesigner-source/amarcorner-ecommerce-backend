@@ -756,6 +756,26 @@ export const trackOrderService = async (orderNumber: number, phone: string) => {
   return order;
 };
 
+export const exportContactsService = async () => {
+  const rows = await prisma.shippingAddress.findMany({
+    select: { name: true, phone: true },
+    orderBy: { createdAt: "desc" },
+  });
+
+  // Keep the most-recent entry per phone number
+  const seen = new Map<string, string>();
+  for (const { phone, name } of rows) {
+    if (!seen.has(phone)) seen.set(phone, name);
+  }
+
+  return [...seen.entries()]
+    .map(
+      ([phone, name]) =>
+        `BEGIN:VCARD\r\nVERSION:3.0\r\nFN:${name}\r\nTEL;TYPE=CELL:${phone}\r\nEND:VCARD`,
+    )
+    .join("\r\n");
+};
+
 export const deleteOrderService = async (orderId: string) => {
   try {
     const orderDelete = await prisma.order.delete({ where: { id: orderId } });
