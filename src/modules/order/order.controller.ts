@@ -120,7 +120,7 @@ export const updateOrderController = async (req: Request, res: Response) => {
     params: req.params,
     body: req.body,
   });
-
+console.log(body)
   const userId = req?.user?.id || "";
   const role = req?.user?.role as Role;
 

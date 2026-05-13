@@ -13,16 +13,34 @@ export const VendorPayoutService = {
     });
   },
 
-  async findAll(userId: string, role: Role, page = 1, limit = 10) {
-    const where =
-      role === "SHOP_OWNER"
-        ? {
-            shopOwnerId: userId,
-            status: {
-              not: VendorPayoutStatus.CANCELLED,
-            },
-          }
-        : {};
+  async findAll(
+    userId: string,
+    role: Role,
+    page = 1,
+    limit = 10,
+    filters: {
+      shopId?: string;
+      orderNumber?: number;
+      startDate?: Date;
+      endDate?: Date;
+      status?: VendorPayoutStatus;
+    } = {},
+  ) {
+    const { shopId, orderNumber, startDate, endDate, status } = filters;
+
+    const where: Record<string, any> = role === "SHOP_OWNER"
+      ? { shopOwnerId: userId, status: { not: VendorPayoutStatus.CANCELLED } }
+      : {};
+
+    if (shopId) where.shopId = shopId;
+    if (orderNumber) where.order = { ...where.order, orderNumber };
+    if (status) where.status = status;
+    if (startDate || endDate) {
+      where.createdAt = {
+        ...(startDate && { gte: startDate }),
+        ...(endDate && { lte: endDate }),
+      };
+    }
 
     const skip = (page - 1) * limit;
 

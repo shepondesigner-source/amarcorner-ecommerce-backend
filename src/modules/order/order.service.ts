@@ -514,6 +514,7 @@ export const updateOrderService = async (
   role: Role,
   payload: any,
 ) => {
+  console.log(payload.status);
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     include: {
@@ -573,7 +574,7 @@ export const updateOrderService = async (
     });
 
     if (!ownsProduct) throw new AppError("Not your order", 403);
-
+    console.log(payload.status);
     const vendorPayoutUpdate =
       payload.status === "CONFIRMED" || payload.status === "SHIPPED"
         ? {
@@ -602,7 +603,7 @@ export const updateOrderService = async (
 
   /* ================= ADMIN ================= */
   const adminVendorPayoutUpdate =
-    payload.status === "CONFIRMED"
+    payload.status === "CONFIRMED" || payload.status === "SHIPPED"
       ? {
           updateMany: {
             where: { orderId },
@@ -661,10 +662,7 @@ export const getOpenOrderService = async (orderId: string) => {
   return order;
 };
 
-export const trackOrderService = async (
-  orderNumber: number,
-  phone: string,
-) => {
+export const trackOrderService = async (orderNumber: number, phone: string) => {
   const order = await prisma.order.findFirst({
     where: {
       orderNumber,

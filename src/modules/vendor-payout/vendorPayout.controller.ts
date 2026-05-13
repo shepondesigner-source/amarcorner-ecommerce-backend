@@ -41,12 +41,24 @@ export const VendorPayoutController = {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
+      const shopId = (req.query.shopId as string) || undefined;
+      const orderNumber = req.query.orderNumber
+        ? parseInt(req.query.orderNumber as string)
+        : undefined;
+      const startDate = req.query.startDate
+        ? new Date(req.query.startDate as string)
+        : undefined;
+      const endDate = req.query.endDate
+        ? new Date(req.query.endDate as string)
+        : undefined;
+      const status = (req.query.status as VendorPayoutStatus) || undefined;
 
       const result = await VendorPayoutService.findAll(
         req.user?.id!,
         req.user?.role!,
         page,
         limit,
+        { shopId, orderNumber, startDate, endDate, status },
       );
 
       res.json(result);

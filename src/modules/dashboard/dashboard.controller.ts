@@ -83,7 +83,7 @@ export const DashboardController = {
         ] = await Promise.all([
           prisma.order.aggregate({
             where: {
-              createdAt: { gte: startDate, lte: endDate },
+              // createdAt: { gte: startDate, lte: endDate },
             },
             _sum: { totalAmount: true },
             _count: { id: true },
@@ -91,7 +91,7 @@ export const DashboardController = {
 
           prisma.order.aggregate({
             where: {
-              createdAt: { gte: startDate, lte: endDate },
+              // createdAt: { gte: startDate, lte: endDate },
               status: OrderStatus.DELIVERED,
             },
             _sum: {
@@ -105,7 +105,7 @@ export const DashboardController = {
           prisma.orderItem.findMany({
             where: {
               order: {
-                createdAt: { gte: startDate, lte: endDate },
+                // createdAt: { gte: startDate, lte: endDate },
                 status: OrderStatus.DELIVERED,
               },
             },
@@ -151,7 +151,7 @@ export const DashboardController = {
           prisma.order.groupBy({
             by: ["status"],
             where: {
-              createdAt: { gte: startDate, lte: endDate },
+              // createdAt: { gte: startDate, lte: endDate },
             },
             _count: { id: true },
             _sum: { totalAmount: true },
@@ -165,7 +165,7 @@ export const DashboardController = {
 
           prisma.user.count({
             where: {
-              createdAt: { gte: startDate, lte: endDate },
+              // createdAt: { gte: startDate, lte: endDate },
             },
           }),
 
@@ -173,7 +173,7 @@ export const DashboardController = {
 
           prisma.shop.count({
             where: {
-              createdAt: { gte: startDate, lte: endDate },
+              // createdAt: { gte: startDate, lte: endDate },
             },
           }),
         ]);
