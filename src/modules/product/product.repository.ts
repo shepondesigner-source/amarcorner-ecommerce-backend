@@ -283,7 +283,7 @@ export class ProductRepository {
       where: { userId: userId, isDefault: true },
     });
     if (userAddress?.district === "Dhaka") {
-      return { rate: 60 };
+      return { rate: 70 };
     } else {
       return { rate: 120 };
     }
