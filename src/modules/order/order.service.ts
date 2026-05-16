@@ -756,6 +756,63 @@ export const trackOrderService = async (orderNumber: number, phone: string) => {
   return order;
 };
 
+const orderInclude = {
+  shippingAddress: true,
+  payment: true,
+  items: {
+    include: {
+      product: { select: { id: true, name: true, slug: true } },
+      size: { select: { id: true, name: true } },
+    },
+  },
+} as const;
+
+const dayRange = (offsetDays: number) => {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - offsetDays);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+  return { start, end, date: start.toISOString().split("T")[0] };
+};
+
+export const getDayOrdersService = async (day: "today" | "yesterday") => {
+  const { start, end, date } = dayRange(day === "yesterday" ? 1 : 0);
+
+  const [orders, total] = await Promise.all([
+    prisma.order.findMany({
+      where: { createdAt: { gte: start, lt: end } },
+      orderBy: { orderNumber: "desc" },
+      include: orderInclude,
+    }),
+    prisma.order.count({ where: { createdAt: { gte: start, lt: end } } }),
+  ]);
+
+  return { data: orders, meta: { total, date } };
+};
+
+export const getDaysSummaryService = async () => {
+  const today = dayRange(0);
+  const yesterday = dayRange(1);
+
+  const [todayOrders, yesterdayOrders] = await Promise.all([
+    prisma.order.findMany({
+      where: { createdAt: { gte: today.start, lt: today.end } },
+      orderBy: { orderNumber: "desc" },
+      include: orderInclude,
+    }),
+    prisma.order.findMany({
+      where: { createdAt: { gte: yesterday.start, lt: yesterday.end } },
+      orderBy: { orderNumber: "desc" },
+      include: orderInclude,
+    }),
+  ]);
+
+  return {
+    today: { data: todayOrders, meta: { total: todayOrders.length, date: today.date } },
+    yesterday: { data: yesterdayOrders, meta: { total: yesterdayOrders.length, date: yesterday.date } },
+  };
+};
+
 export const exportContactsService = async () => {
   const rows = await prisma.shippingAddress.findMany({
     select: { name: true, phone: true },

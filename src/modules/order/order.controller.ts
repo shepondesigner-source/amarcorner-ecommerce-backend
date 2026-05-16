@@ -12,6 +12,8 @@ import {
   createOrderServiceOpen,
   deleteOrderService,
   exportContactsService,
+  getDayOrdersService,
+  getDaysSummaryService,
   getOpenOrderService,
   getOrderListService,
   trackOrderService,
@@ -168,6 +170,17 @@ export const pathaoOrderController = async (req: Request, res: Response) => {
   const order = await createPathaoOrder(req.body.id);
 
   res.status(200).json({ message: "Pathao order created successfully" });
+};
+
+export const getDayOrdersController = async (req: Request, res: Response) => {
+  const day = req.params.day as "today" | "yesterday";
+  const result = await getDayOrdersService(day);
+  res.status(200).json({ success: true, ...result });
+};
+
+export const getDaysSummaryController = async (_req: Request, res: Response) => {
+  const result = await getDaysSummaryService();
+  res.status(200).json({ success: true, ...result });
 };
 
 export const exportContactsController = async (_req: Request, res: Response) => {

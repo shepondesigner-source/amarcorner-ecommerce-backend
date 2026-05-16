@@ -9,6 +9,8 @@ import {
   createOrderControllerOpen,
   deleteOrderController,
   exportContactsController,
+  getDayOrdersController,
+  getDaysSummaryController,
   getOpenOrderController,
   getOrderListController,
   pathaoOrderController,
@@ -31,6 +33,8 @@ router.post(
 
 router.post("/user", asyncHandler(createOrderControllerOpen));
 router.get("/track", asyncHandler(trackOrderController));
+router.get("/day/:day", authenticate, authorize("ADMIN"), asyncHandler(getDayOrdersController));
+router.get("/days/summary", authenticate, authorize("ADMIN"), asyncHandler(getDaysSummaryController));
 router.get("/contacts/export", authenticate, authorize("ADMIN"), asyncHandler(exportContactsController));
 router.post("/pathao", asyncHandler(pathaoOrderController));
 router.get("/", authenticate, asyncHandler(getOrderListController));
