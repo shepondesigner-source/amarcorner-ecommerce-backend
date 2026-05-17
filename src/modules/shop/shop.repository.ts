@@ -37,6 +37,7 @@ export class ShopRepository {
         createdAt: true,
         ownerId: true,
         owner: true,
+        pathaoId: true,
       },
     });
   }

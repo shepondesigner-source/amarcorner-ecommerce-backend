@@ -10,6 +10,7 @@ export const createShopSchema = z.object({
     email: z.email(),
     address: z.string().optional(),
     ownerId: z.string().optional(),
+    pathaoId: z.string().optional(),
   }),
 });
 
@@ -25,6 +26,7 @@ export const updateShopSchema = z.object({
     ownerId: id,
     emailVerified: z.boolean().optional(),
     imageUrl: z.string().optional(),
+    pathaoId: z.string().optional(),
   }),
 });
 
