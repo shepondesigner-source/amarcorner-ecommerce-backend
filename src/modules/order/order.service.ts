@@ -605,13 +605,12 @@ export const updateOrderService = async (
     });
 
     if (!ownsProduct) throw new AppError("Not your order", 403);
-    console.log(payload.status);
     const vendorPayoutUpdate =
-      payload.status === "CONFIRMED" || payload.status === "SHIPPED"
+      payload.status === "CONFIRMED"
         ? {
             updateMany: {
               where: { orderId },
-              data: { status: VendorPayoutStatus.PROCESSING },
+              data: { status: VendorPayoutStatus.PENDING },
             },
           }
         : payload.status === "CANCELLED"
@@ -634,7 +633,7 @@ export const updateOrderService = async (
 
   /* ================= ADMIN ================= */
   const adminVendorPayoutUpdate =
-    payload.status === "CONFIRMED" || payload.status === "SHIPPED"
+    payload.status === "DELIVERED"
       ? {
           updateMany: {
             where: { orderId },
@@ -769,7 +768,11 @@ const orderInclude = {
 
 const dayRange = (offsetDays: number) => {
   const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - offsetDays);
+  const start = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate() - offsetDays,
+  );
   const end = new Date(start);
   end.setDate(end.getDate() + 1);
   return { start, end, date: start.toISOString().split("T")[0] };
@@ -808,8 +811,14 @@ export const getDaysSummaryService = async () => {
   ]);
 
   return {
-    today: { data: todayOrders, meta: { total: todayOrders.length, date: today.date } },
-    yesterday: { data: yesterdayOrders, meta: { total: yesterdayOrders.length, date: yesterday.date } },
+    today: {
+      data: todayOrders,
+      meta: { total: todayOrders.length, date: today.date },
+    },
+    yesterday: {
+      data: yesterdayOrders,
+      meta: { total: yesterdayOrders.length, date: yesterday.date },
+    },
   };
 };
 
