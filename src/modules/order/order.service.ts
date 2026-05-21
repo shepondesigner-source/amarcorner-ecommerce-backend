@@ -676,22 +676,25 @@ export const updateOrderAmountService = async (
     },
   });
 };
-
 export const getOpenOrderService = async (orderId: string) => {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     include: {
       items: {
-        include: { product: true },
+        include: { product: true, size:{
+          select:{
+              name:true
+          }} },
+        
       },
       payment: true,
       shippingAddress: true,
+      
     },
   });
 
   return order;
 };
-
 export const trackOrderService = async (orderNumber: number, phone: string) => {
   const order = await prisma.order.findFirst({
     where: {
