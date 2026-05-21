@@ -105,17 +105,24 @@ export const getOrderListController = async (req: Request, res: Response) => {
   }
 };
 
-export const getOpenOrderController = async (req: Request, res: Response) => {
-  const parsed = getOrderSchema.parse({
-    params: req.params,
+export const getOpenOrderService = async (orderId: string) => {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: {
+      items: {
+        include: { product: true, size:{
+          select:{
+              name:true
+          }} },
+        
+      },
+      payment: true,
+      shippingAddress: true,
+      
+    },
   });
 
-  const order = await getOpenOrderService(parsed.params.id);
-
-  res.status(200).json({
-    message: "Order updated successfully",
-    data: order,
-  });
+  return order;
 };
 
 export const updateOrderController = async (req: Request, res: Response) => {
