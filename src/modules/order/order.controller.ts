@@ -20,7 +20,7 @@ import {
   updateOrderAmountService,
   updateOrderService,
 } from "./order.service";
-import { Role, VendorPayoutStatus } from "../../../generated/prisma";
+import { OrderStatus, Role, VendorPayoutStatus } from "../../../generated/prisma";
 import { body } from "express-validator";
 import { createPathaoOrder } from "../common/service";
 
@@ -79,6 +79,8 @@ export const getOrderListController = async (req: Request, res: Response) => {
     const excludePaidVendorPayment =
       req.query.excludePaidVendorPayment === "true";
 
+    const status = req.query.status as OrderStatus | undefined;
+
     const result = await getOrderListService(
       userId,
       userRole,
@@ -88,6 +90,7 @@ export const getOrderListController = async (req: Request, res: Response) => {
       shopId,
       vendorPayoutStatus,
       excludePaidVendorPayment,
+      status,
     );
 
     res.status(200).json({

@@ -1,4 +1,4 @@
-import { Prisma, Role, VendorPayoutStatus } from "../../../generated/prisma";
+import { OrderStatus, Prisma, Role, VendorPayoutStatus } from "../../../generated/prisma";
 import { prisma } from "../../config/prisma";
 import { AppError } from "../../core/errors/AppError";
 
@@ -366,6 +366,7 @@ export const getOrderListService = async (
   shopId?: string,
   vendorPayoutStatus?: VendorPayoutStatus,
   excludePaidVendorPayment?: boolean,
+  status?: OrderStatus,
 ) => {
   const skip = (page - 1) * limit;
 
@@ -442,6 +443,9 @@ export const getOrderListService = async (
         },
       },
     }),
+
+    /** Filter by order status */
+    ...(status && { status }),
   };
 
   /** --------------------------------
@@ -500,10 +504,12 @@ export const getOrderListService = async (
   /** Total orders + total item quantity per user (all-time) */
   const userIds = [...new Set(orders.map((o) => o.userId))];
 
-  const userStats = await prisma.$queryRaw<
-    { userId: string; totalOrders: bigint; totalItems: bigint }[]
-  >(
-    Prisma.sql`
+  const userStats =
+    userIds.length > 0
+      ? await prisma.$queryRaw<
+          { userId: string; totalOrders: bigint; totalItems: bigint }[]
+        >(
+          Prisma.sql`
       SELECT
         o."userId",
         COUNT(DISTINCT o.id)          AS "totalOrders",
@@ -513,7 +519,8 @@ export const getOrderListService = async (
       WHERE o."userId" IN (${Prisma.join(userIds)})
       GROUP BY o."userId"
     `,
-  );
+        )
+      : [];
 
   const statsMap = Object.fromEntries(
     userStats.map((r) => [

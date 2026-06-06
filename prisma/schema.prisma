@@ -20,6 +20,7 @@ enum OrderStatus {
   DELIVERED
   CANCELLED
   GIFT
+  RETURNED
 }
 
 enum PathaoStatus {
@@ -361,6 +362,7 @@ model Complain {
   name    String
   phone   String
   message String
+  createdAt DateTime @default(now())
 
   @@index([email])
   @@index([phone])
