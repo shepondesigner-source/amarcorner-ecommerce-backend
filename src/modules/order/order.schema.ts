@@ -80,6 +80,16 @@ export const getOrderSchema = z.object({
   }),
 });
 
+export const updateOrderItemSizeSchema = z.object({
+  params: z.object({
+    orderId: z.cuid(),
+    itemId: z.cuid(),
+  }),
+  body: z.object({
+    sizeId: z.string().cuid().nullable(),
+  }),
+});
+
 export const trackOrderSchema = z.object({
   query: z.object({
     orderNumber: z.string().regex(/^\d+$/, "Order number must be numeric"),

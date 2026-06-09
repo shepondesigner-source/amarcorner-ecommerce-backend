@@ -1,4 +1,9 @@
-import { OrderStatus, Prisma, Role, VendorPayoutStatus } from "../../../generated/prisma";
+import {
+  OrderStatus,
+  Prisma,
+  Role,
+  VendorPayoutStatus,
+} from "../../../generated/prisma";
 import { prisma } from "../../config/prisma";
 import { AppError } from "../../core/errors/AppError";
 
@@ -552,7 +557,6 @@ export const updateOrderService = async (
   role: Role,
   payload: any,
 ) => {
-  console.log(payload.status);
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     include: {
@@ -688,15 +692,17 @@ export const getOpenOrderService = async (orderId: string) => {
     where: { id: orderId },
     include: {
       items: {
-        include: { product: true, size:{
-          select:{
-              name:true
-          }} },
-        
+        include: {
+          product: true,
+          size: {
+            select: {
+              name: true,
+            },
+          },
+        },
       },
       payment: true,
       shippingAddress: true,
-      
     },
   });
 
@@ -850,6 +856,24 @@ export const exportContactsService = async () => {
         `BEGIN:VCARD\r\nVERSION:3.0\r\nFN:${name}\r\nTEL;TYPE=CELL:${phone}\r\nEND:VCARD`,
     )
     .join("\r\n");
+};
+
+export const updateOrderItemSizeService = async (
+  orderId: string,
+  itemId: string,
+  sizeId: string | null,
+) => {
+  const item = await prisma.orderItem.findFirst({
+    where: { id: itemId, orderId },
+  });
+
+  if (!item) throw new AppError("Order item not found", 404);
+
+  return prisma.orderItem.update({
+    where: { id: itemId },
+    data: { sizeId },
+    include: { size: { select: { id: true, name: true } } },
+  });
 };
 
 export const deleteOrderService = async (orderId: string) => {

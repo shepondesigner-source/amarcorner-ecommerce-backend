@@ -5,6 +5,7 @@ import {
   getOrderSchema,
   trackOrderSchema,
   updateOrderAmountSchema,
+  updateOrderItemSizeSchema,
   updateOrderSchema,
 } from "./order.schema";
 import {
@@ -18,9 +19,14 @@ import {
   getOrderListService,
   trackOrderService,
   updateOrderAmountService,
+  updateOrderItemSizeService,
   updateOrderService,
 } from "./order.service";
-import { OrderStatus, Role, VendorPayoutStatus } from "../../../generated/prisma";
+import {
+  OrderStatus,
+  Role,
+  VendorPayoutStatus,
+} from "../../../generated/prisma";
 import { body } from "express-validator";
 import { createPathaoOrder } from "../common/service";
 
@@ -121,13 +127,11 @@ export const getOpenOrderController = async (req: Request, res: Response) => {
   });
 };
 
-
 export const updateOrderController = async (req: Request, res: Response) => {
   const parsed = updateOrderSchema.parse({
     params: req.params,
     body: req.body,
   });
-console.log(body)
   const userId = req?.user?.id || "";
   const role = req?.user?.role as Role;
 
@@ -182,16 +186,43 @@ export const getDayOrdersController = async (req: Request, res: Response) => {
   res.status(200).json({ success: true, ...result });
 };
 
-export const getDaysSummaryController = async (_req: Request, res: Response) => {
+export const getDaysSummaryController = async (
+  _req: Request,
+  res: Response,
+) => {
   const result = await getDaysSummaryService();
   res.status(200).json({ success: true, ...result });
 };
 
-export const exportContactsController = async (_req: Request, res: Response) => {
+export const exportContactsController = async (
+  _req: Request,
+  res: Response,
+) => {
   const vcf = await exportContactsService();
   res.setHeader("Content-Type", "text/vcard; charset=utf-8");
   res.setHeader("Content-Disposition", 'attachment; filename="customers.vcf"');
   res.send(vcf);
+};
+
+export const updateOrderItemSizeController = async (
+  req: Request,
+  res: Response,
+) => {
+  const parsed = updateOrderItemSizeSchema.parse({
+    params: req.params,
+    body: req.body,
+  });
+
+  const item = await updateOrderItemSizeService(
+    parsed.params.orderId,
+    parsed.params.itemId,
+    parsed.body.sizeId,
+  );
+
+  res.status(200).json({
+    message: "Order item size updated successfully",
+    data: item,
+  });
 };
 
 export const trackOrderController = async (req: Request, res: Response) => {

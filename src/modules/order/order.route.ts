@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { updateOrderAmountSchema, updateOrderSchema } from "./order.schema";
+import { updateOrderAmountSchema, updateOrderItemSizeSchema, updateOrderSchema } from "./order.schema";
 import { authenticate } from "../../core/middlewares/auth.middleware";
 import { authorize } from "../../core/middlewares/authorize.middleware";
 import { asyncHandler } from "../../core/utils/asyncHandler";
@@ -16,6 +16,7 @@ import {
   pathaoOrderController,
   trackOrderController,
   updateOrderController,
+  updateOrderItemSizeController,
   updateOrderPriceController,
 } from "./order.controller";
 
@@ -51,6 +52,13 @@ router.patch(
   authorize("ADMIN"),
   validate(updateOrderAmountSchema),
   asyncHandler(updateOrderPriceController),
+);
+router.patch(
+  "/:orderId/items/:itemId/size",
+  authenticate,
+  authorize("ADMIN"),
+  validate(updateOrderItemSizeSchema),
+  asyncHandler(updateOrderItemSizeController),
 );
 router.delete("/:id", asyncHandler(deleteOrderController));
 
