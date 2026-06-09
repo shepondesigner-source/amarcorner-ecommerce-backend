@@ -296,8 +296,14 @@ export class ProductRepository {
 
   async getDeliveryChargeOpen(district: string, category: string) {
     if (district === "Dhaka") {
+      if (category === "Fruits") {
+        return { rate: 200 };
+      }
       return { rate: 70 };
     } else {
+      if (category === "Fruits") {
+        return { rate: 200 };
+      }
       return { rate: 120 };
     }
   }
