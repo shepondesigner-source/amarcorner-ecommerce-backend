@@ -294,7 +294,7 @@ export class ProductRepository {
     }
   }
 
-  async getDeliveryChargeOpen(district: string) {
+  async getDeliveryChargeOpen(district: string, category: string) {
     if (district === "Dhaka") {
       return { rate: 70 };
     } else {
