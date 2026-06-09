@@ -269,6 +269,11 @@ export class ProductRepository {
         id: true,
         price: true,
         discountPrice: true,
+        category: {
+          select: {
+            name: true,
+          },
+        },
       },
       orderBy: [
         {

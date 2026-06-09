@@ -57,9 +57,9 @@ export const getdProductDeliveryChargeOpen = async (
   req: Request,
   res: Response,
 ) => {
-  const { district } = req.body;
+  const { district, category } = req.body;
   if (district) {
-    const featured = await service.getDeliveryOpenRate(district);
+    const featured = await service.getDeliveryOpenRate(district, category);
     res.json(featured);
   }
 };

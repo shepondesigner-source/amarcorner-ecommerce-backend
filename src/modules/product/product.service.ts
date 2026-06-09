@@ -391,8 +391,8 @@ export class ProductService {
     return rate;
   }
 
-  async getDeliveryOpenRate(district: string) {
-    const rate = await this.repo.getDeliveryChargeOpen(district);
+  async getDeliveryOpenRate(district: string, category: string) {
+    const rate = await this.repo.getDeliveryChargeOpen(district, category);
     return rate;
   }
 
