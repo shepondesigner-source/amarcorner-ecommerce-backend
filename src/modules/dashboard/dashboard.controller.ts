@@ -342,7 +342,7 @@ export const DashboardController = {
             _sum: { amount: true },
           }),
         ]);
-        console.log(paidPayoutsAgg._sum.amount);
+        // console.log(paidPayoutsAgg._sum.amount);
 
         const totalRevenue = orderItems.reduce(
           (sum, item) => sum + item.product.shopSellPrice * item.quantity,

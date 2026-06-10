@@ -240,7 +240,7 @@ export class ProductService {
   }
 
   async update(id: string, data: any, files: Express.Multer.File[]) {
-    console.log(data);
+    // console.log(data);
     const product = await this.repo.findById(id);
     if (!product) throw new Error("Product not found");
 
@@ -386,7 +386,7 @@ export class ProductService {
   }
 
   async getDeliveryRate(id: string) {
-    console.log(id);
+    // console.log(id);
     const rate = await this.repo.getDeliveryCharge(id);
     return rate;
   }

@@ -85,7 +85,8 @@ export const createPathaoOrder = async (orderId: any) => {
       item_weight: 0.5,
       item_type: 2,
       delivery_type: 48,
-      special_instruction:"প্পার্সেলটি চেক করার প্রয়োজন হলে ডেলিভারি ম্যান এর সামনে পার্সেলটি খুলবেন!"
+      special_instruction:
+        "প্পার্সেলটি চেক করার প্রয়োজন হলে ডেলিভারি ম্যান এর সামনে পার্সেলটি খুলবেন!",
     },
     {
       headers: {
@@ -94,7 +95,7 @@ export const createPathaoOrder = async (orderId: any) => {
       },
     },
   );
-  console.log(res.data);
+  // console.log(res.data);
 
   const updateOrder = await prisma.order.update({
     where: { id: orderId },

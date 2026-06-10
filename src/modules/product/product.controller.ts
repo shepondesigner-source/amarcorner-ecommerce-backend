@@ -28,7 +28,7 @@ export const getStockOutProducts = async (req: Request, res: Response) => {
 
 export const updateProduct = async (req: Request, res: Response) => {
   const files = Array.isArray(req.files) ? req.files : [];
-  console.log(req.body);
+  // console.log(req.body);
   const product = await service.update(req.params.id, req.body, files);
   res.json(product);
 };
