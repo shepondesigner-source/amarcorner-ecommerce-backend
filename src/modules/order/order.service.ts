@@ -876,6 +876,15 @@ export const updateOrderItemSizeService = async (
   });
 };
 
+export const deleteOrderItemService = async (itemId: string) => {
+  try {
+    await prisma.orderItem.delete({ where: { id: itemId } });
+    return { success: true, message: "Order item deleted." };
+  } catch (error) {
+    return { success: false, message: `${error}` };
+  }
+};
+
 export const deleteOrderService = async (orderId: string) => {
   try {
     const orderDelete = await prisma.order.delete({ where: { id: orderId } });

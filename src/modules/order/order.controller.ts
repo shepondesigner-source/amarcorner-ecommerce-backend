@@ -11,6 +11,7 @@ import {
 import {
   createOrderService,
   createOrderServiceOpen,
+  deleteOrderItemService,
   deleteOrderService,
   exportContactsService,
   getDayOrdersService,
@@ -172,6 +173,11 @@ export const deleteOrderController = async (req: Request, res: Response) => {
   const order = await deleteOrderService(req.params.id);
 
   res.status(200).json(order);
+};
+
+export const deleteOrderItemController = async (req: Request, res: Response) => {
+  const result = await deleteOrderItemService(req.params.itemId);
+  res.status(200).json(result);
 };
 
 export const pathaoOrderController = async (req: Request, res: Response) => {

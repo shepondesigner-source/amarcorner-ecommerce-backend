@@ -8,6 +8,7 @@ import {
   createOrderController,
   createOrderControllerOpen,
   deleteOrderController,
+  deleteOrderItemController,
   exportContactsController,
   getDayOrdersController,
   getDaysSummaryController,
@@ -61,5 +62,6 @@ router.patch(
   asyncHandler(updateOrderItemSizeController),
 );
 router.delete("/:id", asyncHandler(deleteOrderController));
+router.delete("/items/:itemId", authenticate, authorize("ADMIN"), asyncHandler(deleteOrderItemController));
 
 export default router;
