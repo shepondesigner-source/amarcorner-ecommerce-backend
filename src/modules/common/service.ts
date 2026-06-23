@@ -80,7 +80,7 @@ export const createPathaoOrder = async (orderId: any) => {
       recipient_phone: order?.user.phone.trim(),
       recipient_address: order?.shippingAddress.address,
       amount_to_collect: order?.totalAmount,
-      item_description: "Ecommerce Product",
+      item_description: `Ecommerce Product: ${order?.items.length} items`,
       item_quantity: 1,
       item_weight: 0.5,
       item_type: 2,
