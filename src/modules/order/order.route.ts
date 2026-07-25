@@ -17,6 +17,8 @@ import {
   pathaoOrderController,
   trackOrderController,
   updateOrderController,
+  updateOrderItemController,
+  updateOrderItemImageController,
   updateOrderItemSizeController,
   updateOrderPriceController,
 } from "./order.controller";
@@ -61,6 +63,8 @@ router.patch(
   validate(updateOrderItemSizeSchema),
   asyncHandler(updateOrderItemSizeController),
 );
+router.patch("/items/:itemId/image", authenticate, authorize("ADMIN"), asyncHandler(updateOrderItemImageController));
+router.patch("/items/:itemId", authenticate, authorize("ADMIN"), asyncHandler(updateOrderItemController));
 router.delete("/:id", asyncHandler(deleteOrderController));
 router.delete("/items/:itemId", authenticate, authorize("ADMIN"), asyncHandler(deleteOrderItemController));
 

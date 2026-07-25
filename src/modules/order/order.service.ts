@@ -487,6 +487,7 @@ export const getOrderListService = async (
                 slug: true,
                 shop: true,
                 shopPrice: true,
+                imageUrls: true,
               },
             },
 
@@ -873,6 +874,27 @@ export const updateOrderItemSizeService = async (
     where: { id: itemId },
     data: { sizeId },
     include: { size: { select: { id: true, name: true } } },
+  });
+};
+
+export const updateOrderItemImageService = async (itemId: string, imageUrl: string) => {
+  return prisma.orderItem.update({
+    where: { id: itemId },
+    data: { imageUrl },
+  });
+};
+
+export const updateOrderItemFullService = async (
+  itemId: string,
+  data: { productId?: string; imageUrl?: string; sizeId?: string | null },
+) => {
+  return prisma.orderItem.update({
+    where: { id: itemId },
+    data: {
+      ...(data.productId && { productId: data.productId }),
+      ...(data.imageUrl && { imageUrl: data.imageUrl }),
+      ...(data.sizeId !== undefined && { sizeId: data.sizeId }),
+    },
   });
 };
 

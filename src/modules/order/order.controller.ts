@@ -13,6 +13,8 @@ import {
   createOrderServiceOpen,
   deleteOrderItemService,
   deleteOrderService,
+  updateOrderItemImageService,
+  updateOrderItemFullService,
   exportContactsService,
   getDayOrdersService,
   getDaysSummaryService,
@@ -178,6 +180,20 @@ export const deleteOrderController = async (req: Request, res: Response) => {
 export const deleteOrderItemController = async (req: Request, res: Response) => {
   const result = await deleteOrderItemService(req.params.itemId);
   res.status(200).json(result);
+};
+
+export const updateOrderItemImageController = async (req: Request, res: Response) => {
+  const { itemId } = req.params;
+  const { imageUrl } = req.body;
+  const result = await updateOrderItemImageService(itemId, imageUrl);
+  res.status(200).json({ success: true, data: result });
+};
+
+export const updateOrderItemController = async (req: Request, res: Response) => {
+  const { itemId } = req.params;
+  const { productId, imageUrl, sizeId } = req.body;
+  const result = await updateOrderItemFullService(itemId, { productId, imageUrl, sizeId });
+  res.status(200).json({ success: true, data: result });
 };
 
 export const pathaoOrderController = async (req: Request, res: Response) => {
