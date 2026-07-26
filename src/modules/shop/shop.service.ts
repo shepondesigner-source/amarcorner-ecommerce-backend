@@ -21,7 +21,6 @@ export class ShopService {
     if (file) {
       imageUrl = await uploadToCloudinary(file.buffer, "shops");
     }
-
     return this.repo.create({
       ...data,
       imageUrl,
@@ -62,6 +61,7 @@ export class ShopService {
         name: true,
         imageUrl: true,
         pathaoId: true,
+        carrybeeId: true,
         owner: {
           select: {
             id: true,

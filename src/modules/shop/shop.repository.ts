@@ -38,6 +38,7 @@ export class ShopRepository {
         ownerId: true,
         owner: true,
         pathaoId: true,
+        carrybeeId: true,
       },
     });
   }
@@ -47,7 +48,7 @@ export class ShopRepository {
   }
 
   update(id: string, data: any) {
-    // console.log(data);
+    console.log(data);
     return prisma.shop.update({
       where: { id },
       data,

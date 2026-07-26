@@ -28,6 +28,11 @@ enum PathaoStatus {
   UNPLACED
 }
 
+enum CarrybeeStatus {
+  PLACED
+  UNPLACED
+}
+
 enum OtpPurpose {
   LOGIN
   REGISTER
@@ -108,6 +113,7 @@ model Shop {
   owner         User    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
   pathaoId      String?
+  carrybeeId    String?
   products      Product[]
   vendorPayouts VendorPayout[] // ✅ ADD THIS
 
@@ -222,8 +228,9 @@ model Order {
   userId      String
   user        User   @relation(fields: [userId], references: [id], onDelete: Restrict)
 
-  status       OrderStatus  @default(PENDING)
-  pathaoStatus PathaoStatus @default(UNPLACED)
+  status         OrderStatus    @default(PENDING)
+  pathaoStatus   PathaoStatus   @default(UNPLACED)
+  carrybeeStatus CarrybeeStatus @default(UNPLACED)
   totalAmount  Float
 
   comment String?

@@ -27,6 +27,7 @@ export const updateShopSchema = z.object({
     emailVerified: z.boolean().optional(),
     imageUrl: z.string().optional(),
     pathaoId: z.string().optional(),
+    carrybeeId: z.string().optional(),
   }),
 });
 
