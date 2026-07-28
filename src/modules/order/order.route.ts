@@ -1,10 +1,17 @@
 import { Router } from "express";
-import { updateOrderAmountSchema, updateOrderItemSizeSchema, updateOrderSchema } from "./order.schema";
+import {
+  addOrderItemSchema,
+  updateOrderAmountSchema,
+  updateOrderItemSizeSchema,
+  updateOrderItemLongSizeSchema,
+  updateOrderSchema,
+} from "./order.schema";
 import { authenticate } from "../../core/middlewares/auth.middleware";
 import { authorize } from "../../core/middlewares/authorize.middleware";
 import { asyncHandler } from "../../core/utils/asyncHandler";
 import { validate } from "../../core/validation/validate";
 import {
+  addOrderItemController,
   createOrderController,
   createOrderControllerOpen,
   deleteOrderController,
@@ -20,6 +27,7 @@ import {
   updateOrderItemController,
   updateOrderItemImageController,
   updateOrderItemSizeController,
+  updateOrderItemLongSizeController,
   updateOrderPriceController,
 } from "./order.controller";
 
@@ -62,6 +70,20 @@ router.patch(
   authorize("ADMIN"),
   validate(updateOrderItemSizeSchema),
   asyncHandler(updateOrderItemSizeController),
+);
+router.patch(
+  "/:orderId/items/:itemId/long-size",
+  authenticate,
+  authorize("ADMIN"),
+  validate(updateOrderItemLongSizeSchema),
+  asyncHandler(updateOrderItemLongSizeController),
+);
+router.post(
+  "/:orderId/items",
+  authenticate,
+  authorize("ADMIN"),
+  validate(addOrderItemSchema),
+  asyncHandler(addOrderItemController),
 );
 router.patch("/items/:itemId/image", authenticate, authorize("ADMIN"), asyncHandler(updateOrderItemImageController));
 router.patch("/items/:itemId", authenticate, authorize("ADMIN"), asyncHandler(updateOrderItemController));

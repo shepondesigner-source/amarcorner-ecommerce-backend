@@ -179,6 +179,15 @@ model Size {
   createdAt DateTime @default(now())
 }
 
+model LongSize {
+  id         String      @id @default(cuid())
+  name       String      @unique
+  products   Product[]
+  orderItems OrderItem[]
+
+  createdAt DateTime @default(now())
+}
+
 model Product {
   id            String  @id @default(cuid())
   name          String
@@ -195,7 +204,8 @@ model Product {
 
   imageUrls String[] // ✅ multiple images
 
-  sizes Size[] // ✅ from Size table (implicit M2M)
+  sizes     Size[] // ✅ from Size table (implicit M2M)
+  longSizes LongSize[] // ✅ from LongSize table (implicit M2M)
 
   shopId String
   shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
@@ -231,7 +241,7 @@ model Order {
   status         OrderStatus    @default(PENDING)
   pathaoStatus   PathaoStatus   @default(UNPLACED)
   carrybeeStatus CarrybeeStatus @default(UNPLACED)
-  totalAmount  Float
+  totalAmount    Float
 
   comment String?
 
@@ -263,6 +273,9 @@ model OrderItem {
   imageUrl String
   sizeId   String? // optional foreign key
   size     Size?   @relation(fields: [sizeId], references: [id])
+
+  longSizeId String? // optional foreign key
+  longSize   LongSize? @relation(fields: [longSizeId], references: [id])
 
   price         Float
   discountPrice Float?
@@ -364,11 +377,11 @@ model Review {
 }
 
 model Complain {
-  id      Int    @id @default(autoincrement())
-  email   String
-  name    String
-  phone   String
-  message String
+  id        Int      @id @default(autoincrement())
+  email     String
+  name      String
+  phone     String
+  message   String
   createdAt DateTime @default(now())
 
   @@index([email])

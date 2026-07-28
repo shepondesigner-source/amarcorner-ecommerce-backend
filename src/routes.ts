@@ -12,6 +12,7 @@ import shopRoutes from "./modules/shop/shop.routes";
 
 import paymentRoutes from "./modules/payment/payment.route";
 import sizeRoutes from "./modules/size/size.route";
+import longSizeRoutes from "./modules/longSize/longSize.route";
 import dashboardRoutes from "./modules/dashboard/dashboard.routes";
 
 import vendorPaymentRoutes from "./modules/vendor-payout/vendorPayout.route";
@@ -57,6 +58,9 @@ router.use("/payments", paymentRoutes);
 
 // size routes
 router.use("/sizes", sizeRoutes);
+
+// long size routes
+router.use("/long-sizes", longSizeRoutes);
 
 router.use("/vendor-pay", vendorPaymentRoutes);
 

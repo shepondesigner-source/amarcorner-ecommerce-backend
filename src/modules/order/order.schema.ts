@@ -17,6 +17,7 @@ export const createOrderSchema = z.object({
           productId: z.string(),
           imageUrl: z.string(),
           sizeId: z.string().optional(),
+          longSizeId: z.string().optional(),
           quantity: z.number().int().positive(),
         }),
       )
@@ -41,6 +42,7 @@ export const createOrderSchemaOpen = z.object({
           productId: z.string(),
           imageUrl: z.string(),
           sizeId: z.string().optional(),
+          longSizeId: z.string().optional(),
           quantity: z.number().int().positive(),
         }),
       )
@@ -87,6 +89,29 @@ export const updateOrderItemSizeSchema = z.object({
   }),
   body: z.object({
     sizeId: z.string().cuid().nullable(),
+  }),
+});
+
+export const updateOrderItemLongSizeSchema = z.object({
+  params: z.object({
+    orderId: z.cuid(),
+    itemId: z.cuid(),
+  }),
+  body: z.object({
+    longSizeId: z.string().cuid().nullable(),
+  }),
+});
+
+export const addOrderItemSchema = z.object({
+  params: z.object({
+    orderId: z.cuid(),
+  }),
+  body: z.object({
+    productId: z.string(),
+    imageUrl: z.string(),
+    sizeId: z.string().optional(),
+    longSizeId: z.string().optional(),
+    quantity: z.number().int().positive(),
   }),
 });
 

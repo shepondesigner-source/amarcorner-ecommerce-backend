@@ -11,7 +11,7 @@ export class ProductService {
   private repo = new ProductRepository();
 
   async create(data: any, files?: Express.Multer.File[]) {
-    const { sizeIds, ...remainingData } = data;
+    const { sizeIds, longSizeIds, ...remainingData } = data;
     const imageUrls: string[] = [];
 
     if (files?.length) {
@@ -27,11 +27,14 @@ export class ProductService {
       sizes: sizeIds
         ? { connect: sizeIds.map((id: string) => ({ id })) }
         : undefined,
+      longSizes: longSizeIds
+        ? { connect: longSizeIds.map((id: string) => ({ id })) }
+        : undefined,
     });
   }
 
   async createVendorProduct(data: any, files?: Express.Multer.File[]) {
-    const { sizeIds, ...remainingData } = data;
+    const { sizeIds, longSizeIds, ...remainingData } = data;
     const imageUrls: string[] = [];
 
     if (files?.length) {
@@ -46,6 +49,9 @@ export class ProductService {
       imageUrls,
       sizes: sizeIds
         ? { connect: sizeIds.map((id: string) => ({ id })) }
+        : undefined,
+      longSizes: longSizeIds
+        ? { connect: longSizeIds.map((id: string) => ({ id })) }
         : undefined,
     });
   }
@@ -103,6 +109,12 @@ export class ProductService {
         ? Array.isArray(query.sizeIds)
           ? query.sizeIds
           : [query.sizeIds]
+        : undefined,
+
+      longSizeIds: query.longSizeIds
+        ? Array.isArray(query.longSizeIds)
+          ? query.longSizeIds
+          : [query.longSizeIds]
         : undefined,
 
       isActive: query.isActive === "yes" ? true : undefined,
@@ -200,6 +212,12 @@ export class ProductService {
           : [query.sizeIds]
         : undefined,
 
+      longSizeIds: query.longSizeIds
+        ? Array.isArray(query.longSizeIds)
+          ? query.longSizeIds
+          : [query.longSizeIds]
+        : undefined,
+
       isActive:
         query.isActive !== undefined ? query.isActive === "true" : undefined,
 
@@ -277,9 +295,15 @@ export class ProductService {
         ? JSON.parse(data.sizeIds)
         : data.sizeIds;
 
+    const longSizeIds =
+      data.longSizeIds && typeof data.longSizeIds === "string"
+        ? JSON.parse(data.longSizeIds)
+        : data.longSizeIds;
+
     /* ---------- 6. Clean payload ---------- */
     delete data.existingImageUrls;
     delete data.sizeIds;
+    delete data.longSizeIds;
 
     /* ---------- 7. Update product ---------- */
     return this.repo.update(id, {
@@ -287,6 +311,9 @@ export class ProductService {
       imageUrls: finalImages,
       sizes: sizeIds
         ? { set: sizeIds.map((id: string) => ({ id })) }
+        : undefined,
+      longSizes: longSizeIds
+        ? { set: longSizeIds.map((id: string) => ({ id })) }
         : undefined,
     });
   }

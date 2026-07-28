@@ -1,14 +1,17 @@
 import { Request, Response } from "express";
 import {
+  addOrderItemSchema,
   createOrderSchema,
   getOrderListSchema,
   getOrderSchema,
   trackOrderSchema,
   updateOrderAmountSchema,
   updateOrderItemSizeSchema,
+  updateOrderItemLongSizeSchema,
   updateOrderSchema,
 } from "./order.schema";
 import {
+  addOrderItemService,
   createOrderService,
   createOrderServiceOpen,
   deleteOrderItemService,
@@ -23,6 +26,7 @@ import {
   trackOrderService,
   updateOrderAmountService,
   updateOrderItemSizeService,
+  updateOrderItemLongSizeService,
   updateOrderService,
 } from "./order.service";
 import {
@@ -249,6 +253,41 @@ export const updateOrderItemSizeController = async (
 
   res.status(200).json({
     message: "Order item size updated successfully",
+    data: item,
+  });
+};
+
+export const updateOrderItemLongSizeController = async (
+  req: Request,
+  res: Response,
+) => {
+  const parsed = updateOrderItemLongSizeSchema.parse({
+    params: req.params,
+    body: req.body,
+  });
+
+  const item = await updateOrderItemLongSizeService(
+    parsed.params.orderId,
+    parsed.params.itemId,
+    parsed.body.longSizeId,
+  );
+
+  res.status(200).json({
+    message: "Order item long size updated successfully",
+    data: item,
+  });
+};
+
+export const addOrderItemController = async (req: Request, res: Response) => {
+  const parsed = addOrderItemSchema.parse({
+    params: req.params,
+    body: req.body,
+  });
+
+  const item = await addOrderItemService(parsed.params.orderId, parsed.body);
+
+  res.status(201).json({
+    message: "Order item added successfully",
     data: item,
   });
 };

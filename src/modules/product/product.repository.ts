@@ -15,6 +15,7 @@ export interface ProductFilter {
   discountOnly?: boolean;
 
   sizeIds?: string[];
+  longSizeIds?: string[];
 
   isActive?: boolean;
 
@@ -37,6 +38,7 @@ export class ProductRepository {
       orderBy: [{ stock: "desc" }, { createdAt: "desc" }],
       include: {
         sizes: true,
+        longSizes: true,
         category: true,
         subCategory: true,
       },
@@ -69,6 +71,7 @@ export class ProductRepository {
       maxPrice,
       discountOnly,
       sizeIds,
+      longSizeIds,
       isActive,
       skip,
       take,
@@ -102,6 +105,14 @@ export class ProductRepository {
           }
         : undefined,
 
+      longSizes: longSizeIds
+        ? {
+            some: {
+              id: { in: longSizeIds },
+            },
+          }
+        : undefined,
+
       OR: q
         ? [
             { name: { contains: q, mode: "insensitive" } },
@@ -119,6 +130,7 @@ export class ProductRepository {
         orderBy: [{ discountPrice: "asc" }, { createdAt: "desc" }],
         include: {
           sizes: true,
+          longSizes: true,
           category: true,
           subCategory: true,
           shop: true,
@@ -143,6 +155,7 @@ export class ProductRepository {
         orderBy: [{ stock: "desc" }, { createdAt: "desc" }],
         include: {
           sizes: true,
+          longSizes: true,
           category: true,
           subCategory: true,
           shop: true,
@@ -234,6 +247,12 @@ export class ProductRepository {
             name: true,
           },
         },
+        longSizes: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
   }
@@ -243,6 +262,12 @@ export class ProductRepository {
 
       include: {
         sizes: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        longSizes: {
           select: {
             id: true,
             name: true,

@@ -29,6 +29,7 @@ type CreateOrderInputOpen = {
     productId: string;
     imageUrl: string;
     sizeId?: string;
+    longSizeId?: string;
     quantity: number;
   }[];
 };
@@ -45,6 +46,7 @@ type CreateOrderInput = {
     productId: string;
     imageUrl: string;
     sizeId?: string;
+    longSizeId?: string;
     quantity: number;
   }[];
 };
@@ -93,6 +95,7 @@ export const createOrderService = async (
       productId: product.id,
       imageUrl: item.imageUrl,
       sizeId: item.sizeId,
+      longSizeId: item.longSizeId,
       price: product.price,
       discountPrice: product.discountPrice,
       quantity: item.quantity,
@@ -289,6 +292,7 @@ export const createOrderServiceOpen = async (data: CreateOrderInputOpen) => {
       productId: product.id,
       imageUrl: item.imageUrl,
       sizeId: item.sizeId || null,
+      longSizeId: item.longSizeId || null,
       price: product.price,
       discountPrice: product.discountPrice,
       quantity: item.quantity,
@@ -500,6 +504,12 @@ export const getOrderListService = async (
                 name: true,
               },
             },
+            longSize: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
       },
@@ -703,6 +713,11 @@ export const getOpenOrderService = async (orderId: string) => {
               name: true,
             },
           },
+          longSize: {
+            select: {
+              name: true,
+            },
+          },
         },
       },
       payment: true,
@@ -760,6 +775,11 @@ export const trackOrderService = async (orderNumber: number, phone: string) => {
               name: true,
             },
           },
+          longSize: {
+            select: {
+              name: true,
+            },
+          },
         },
       },
     },
@@ -782,6 +802,7 @@ const orderInclude = {
     include: {
       product: { select: { id: true, name: true, slug: true } },
       size: { select: { id: true, name: true } },
+      longSize: { select: { id: true, name: true } },
     },
   },
 } as const;
@@ -878,6 +899,71 @@ export const updateOrderItemSizeService = async (
     data: { sizeId },
     include: { size: { select: { id: true, name: true } } },
   });
+};
+
+export const updateOrderItemLongSizeService = async (
+  orderId: string,
+  itemId: string,
+  longSizeId: string | null,
+) => {
+  const item = await prisma.orderItem.findFirst({
+    where: { id: itemId, orderId },
+  });
+
+  if (!item) throw new AppError("Order item not found", 404);
+
+  return prisma.orderItem.update({
+    where: { id: itemId },
+    data: { longSizeId },
+    include: { longSize: { select: { id: true, name: true } } },
+  });
+};
+
+export const addOrderItemService = async (
+  orderId: string,
+  data: {
+    productId: string;
+    imageUrl: string;
+    sizeId?: string;
+    longSizeId?: string;
+    quantity: number;
+  },
+) => {
+  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  if (!order) throw new AppError("Order not found", 404);
+
+  const product = await prisma.product.findUnique({
+    where: { id: data.productId },
+  });
+  if (!product) throw new AppError("Product not found", 404);
+
+  const lineTotal = (product.discountPrice ?? product.price) * data.quantity;
+
+  const [item] = await prisma.$transaction([
+    prisma.orderItem.create({
+      data: {
+        orderId,
+        productId: product.id,
+        imageUrl: data.imageUrl,
+        sizeId: data.sizeId || null,
+        longSizeId: data.longSizeId || null,
+        price: product.price,
+        discountPrice: product.discountPrice,
+        quantity: data.quantity,
+      },
+      include: {
+        product: { select: { id: true, name: true, slug: true } },
+        size: { select: { id: true, name: true } },
+        longSize: { select: { id: true, name: true } },
+      },
+    }),
+    prisma.order.update({
+      where: { id: orderId },
+      data: { totalAmount: { increment: lineTotal } },
+    }),
+  ]);
+
+  return item;
 };
 
 export const updateOrderItemImageService = async (itemId: string, imageUrl: string) => {

@@ -28,6 +28,10 @@ export const createProductSchema = z.object({
       .union([z.string(), z.array(id)])
       .optional()
       .transform((v) => (typeof v === "string" ? JSON.parse(v) : v)),
+    longSizeIds: z
+      .union([z.string(), z.array(id)])
+      .optional()
+      .transform((v) => (typeof v === "string" ? JSON.parse(v) : v)),
   }),
 });
 
@@ -43,6 +47,10 @@ export const createVendorProductSchema = z.object({
 
     subCategoryId: id.optional(),
     sizeIds: z
+      .union([z.string(), z.array(id)])
+      .optional()
+      .transform((v) => (typeof v === "string" ? JSON.parse(v) : v)),
+    longSizeIds: z
       .union([z.string(), z.array(id)])
       .optional()
       .transform((v) => (typeof v === "string" ? JSON.parse(v) : v)),
@@ -84,6 +92,10 @@ export const updateProductSchema = z.object({
       .union([z.string(), z.array(id)])
       .optional()
       .transform((v) => (typeof v === "string" ? JSON.parse(v) : v)),
+    longSizeIds: z
+      .union([z.string(), z.array(id)])
+      .optional()
+      .transform((v) => (typeof v === "string" ? JSON.parse(v) : v)),
   }),
 });
 
@@ -119,6 +131,7 @@ export const productFilterSchema = z.object({
   discountOnly: z.coerce.boolean().optional(),
 
   sizeIds: z.array(z.string()).optional(),
+  longSizeIds: z.array(z.string()).optional(),
 
   isActive: z.coerce.boolean().optional(),
 
