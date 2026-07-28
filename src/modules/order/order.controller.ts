@@ -88,7 +88,13 @@ export const getOrderListController = async (req: Request, res: Response) => {
     const excludePaidVendorPayment =
       req.query.excludePaidVendorPayment === "true";
 
-    const status = req.query.status as OrderStatus | undefined;
+    const statusParam = req.query.status as string | undefined;
+    const status = statusParam
+      ? (statusParam
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean) as OrderStatus[])
+      : undefined;
 
     const result = await getOrderListService(
       userId,

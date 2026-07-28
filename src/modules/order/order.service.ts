@@ -371,7 +371,7 @@ export const getOrderListService = async (
   shopId?: string,
   vendorPayoutStatus?: VendorPayoutStatus,
   excludePaidVendorPayment?: boolean,
-  status?: OrderStatus,
+  status?: OrderStatus[],
 ) => {
   const skip = (page - 1) * limit;
 
@@ -449,8 +449,8 @@ export const getOrderListService = async (
       },
     }),
 
-    /** Filter by order status */
-    ...(status && { status }),
+    /** Filter by order status (one or many) */
+    ...(status && status.length > 0 && { status: { in: status } }),
   };
 
   /** --------------------------------
@@ -460,9 +460,12 @@ export const getOrderListService = async (
   const [orders, total] = await Promise.all([
     prisma.order.findMany({
       where: whereCondition,
-      orderBy: {
-        orderNumber: "desc",
-      },
+      // Group by status first — Postgres orders enum values by their
+      // declaration order in schema.prisma (PENDING, CONFIRMED, SHIPPED,
+      // DELIVERED, CANCELLED, GIFT, RETURNED), so this puts pending orders
+      // first, then each other status in turn. Most recent orders come
+      // first within each status group.
+      orderBy: [{ status: "asc" }, { orderNumber: "desc" }],
       skip,
       take: limit,
 
