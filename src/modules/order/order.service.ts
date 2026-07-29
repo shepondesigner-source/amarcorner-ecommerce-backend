@@ -1019,7 +1019,7 @@ export const orderGetbyShopService = async (shopId: string) => {
     });
     const orderList = await prisma.order.findMany({
       where: {
-        status: "CONFIRMED",
+        status: "SHIPPED",
         shopDelivery: false,
         items: {
           some: {
