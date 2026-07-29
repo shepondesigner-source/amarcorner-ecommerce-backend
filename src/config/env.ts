@@ -31,4 +31,9 @@ export const config = {
   },
 
   frontendUrl: process.env.FRONTEND_URL || "http://localhost:3000",
+
+  telegram: {
+    botToken: process.env.TELEGRAM_BOT_TOKEN || "",
+    chatId: process.env.TELEGRAM_CHAT_ID || "",
+  },
 };

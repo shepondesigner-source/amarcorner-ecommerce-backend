@@ -6,6 +6,10 @@ import {
 } from "../../../generated/prisma";
 import { prisma } from "../../config/prisma";
 import { AppError } from "../../core/errors/AppError";
+import {
+  buildOrderNotificationMessage,
+  sendTelegramMessage,
+} from "../../core/service/telegram.service";
 
 import bcrypt from "bcryptjs";
 
@@ -139,6 +143,29 @@ export const createOrderService = async (
 
     return order;
   });
+
+  void sendTelegramMessage(
+    buildOrderNotificationMessage({
+      orderNumber: order.orderNumber,
+      customerName: shippingAddress.name,
+      customerPhone: shippingAddress.phone,
+      district: shippingAddress.district,
+      address: shippingAddress.address,
+      items: data.items.map((item) => {
+        const product = products.find((p) => p.id === item.productId)!;
+        return {
+          name: product.name,
+          quantity: item.quantity,
+          price: product.price,
+          discountPrice: product.discountPrice,
+        };
+      }),
+      deliveryCharge: data.deliveryCharge,
+      totalAmount,
+      paymentMethod: data.payment.method,
+      comment: data.comment,
+    }),
+  );
 
   // try {
   //   const user = await prisma.user.findUnique({ where: { id: userId } });
@@ -362,6 +389,29 @@ export const createOrderServiceOpen = async (data: CreateOrderInputOpen) => {
 
     return createdOrder;
   });
+
+  void sendTelegramMessage(
+    buildOrderNotificationMessage({
+      orderNumber: order.orderNumber,
+      customerName: data.user.fullName,
+      customerPhone: data.user.phone,
+      district: data.user.district,
+      address: data.user.address,
+      items: data.items.map((item) => {
+        const product = products.find((p) => p.id === item.productId)!;
+        return {
+          name: product.name,
+          quantity: item.quantity,
+          price: product.price,
+          discountPrice: product.discountPrice,
+        };
+      }),
+      deliveryCharge: data.deliveryCharge,
+      totalAmount,
+      paymentMethod: data.payment.method,
+      comment: data.comment,
+    }),
+  );
 
   return order;
 };
