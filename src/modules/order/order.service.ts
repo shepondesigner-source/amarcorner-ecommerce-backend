@@ -390,28 +390,28 @@ export const createOrderServiceOpen = async (data: CreateOrderInputOpen) => {
     return createdOrder;
   });
 
-  void sendTelegramMessage(
-    buildOrderNotificationMessage({
-      orderNumber: order.orderNumber,
-      customerName: data.user.fullName,
-      customerPhone: data.user.phone,
-      district: data.user.district,
-      address: data.user.address,
-      items: data.items.map((item) => {
-        const product = products.find((p) => p.id === item.productId)!;
-        return {
-          name: product.name,
-          quantity: item.quantity,
-          price: product.price,
-          discountPrice: product.discountPrice,
-        };
-      }),
-      deliveryCharge: data.deliveryCharge,
-      totalAmount,
-      paymentMethod: data.payment.method,
-      comment: data.comment,
-    }),
-  );
+  // void sendTelegramMessage(
+  //   buildOrderNotificationMessage({
+  //     orderNumber: order.orderNumber,
+  //     customerName: data.user.fullName,
+  //     customerPhone: data.user.phone,
+  //     district: data.user.district,
+  //     address: data.user.address,
+  //     items: data.items.map((item) => {
+  //       const product = products.find((p) => p.id === item.productId)!;
+  //       return {
+  //         name: product.name,
+  //         quantity: item.quantity,
+  //         price: product.price,
+  //         discountPrice: product.discountPrice,
+  //       };
+  //     }),
+  //     deliveryCharge: data.deliveryCharge,
+  //     totalAmount,
+  //     paymentMethod: data.payment.method,
+  //     comment: data.comment,
+  //   }),
+  // );
 
   return order;
 };
