@@ -28,6 +28,8 @@ import {
   updateOrderItemSizeService,
   updateOrderItemLongSizeService,
   updateOrderService,
+  orderGetbyShopService,
+  orderShopDeliveryUpdateShopService,
 } from "./order.service";
 import {
   OrderStatus,
@@ -187,22 +189,35 @@ export const deleteOrderController = async (req: Request, res: Response) => {
   res.status(200).json(order);
 };
 
-export const deleteOrderItemController = async (req: Request, res: Response) => {
+export const deleteOrderItemController = async (
+  req: Request,
+  res: Response,
+) => {
   const result = await deleteOrderItemService(req.params.itemId);
   res.status(200).json(result);
 };
 
-export const updateOrderItemImageController = async (req: Request, res: Response) => {
+export const updateOrderItemImageController = async (
+  req: Request,
+  res: Response,
+) => {
   const { itemId } = req.params;
   const { imageUrl } = req.body;
   const result = await updateOrderItemImageService(itemId, imageUrl);
   res.status(200).json({ success: true, data: result });
 };
 
-export const updateOrderItemController = async (req: Request, res: Response) => {
+export const updateOrderItemController = async (
+  req: Request,
+  res: Response,
+) => {
   const { itemId } = req.params;
   const { productId, imageUrl, sizeId } = req.body;
-  const result = await updateOrderItemFullService(itemId, { productId, imageUrl, sizeId });
+  const result = await updateOrderItemFullService(itemId, {
+    productId,
+    imageUrl,
+    sizeId,
+  });
   res.status(200).json({ success: true, data: result });
 };
 
@@ -216,6 +231,23 @@ export const getDayOrdersController = async (req: Request, res: Response) => {
   const day = req.params.day as "today" | "yesterday";
   const result = await getDayOrdersService(day);
   res.status(200).json({ success: true, ...result });
+};
+
+export const getOrderByShopId = async (req: Request, res: Response) => {
+  const shopId = req.params.shopId;
+
+  const result = await orderGetbyShopService(shopId);
+  res.status(200).json(result);
+};
+
+export const updateOrderShopDeliveryStatusByShopIdOrderId = async (
+  req: Request,
+  res: Response,
+) => {
+  const shopId = req.params.shopId;
+  const orderId = req.params.orderId;
+  const result = await orderShopDeliveryUpdateShopService(shopId, orderId);
+  res.status(200).json(result);
 };
 
 export const getDaysSummaryController = async (

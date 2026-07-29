@@ -966,7 +966,10 @@ export const addOrderItemService = async (
   return item;
 };
 
-export const updateOrderItemImageService = async (itemId: string, imageUrl: string) => {
+export const updateOrderItemImageService = async (
+  itemId: string,
+  imageUrl: string,
+) => {
   return prisma.orderItem.update({
     where: { id: itemId },
     data: { imageUrl },
@@ -1000,6 +1003,74 @@ export const deleteOrderService = async (orderId: string) => {
   try {
     const orderDelete = await prisma.order.delete({ where: { id: orderId } });
     return { success: true, message: "Order is deleted." };
+  } catch (error) {
+    return { success: false, message: `${error}` };
+  }
+};
+
+export const orderGetbyShopService = async (shopId: string) => {
+  try {
+    const orderList = await prisma.order.findMany({
+      where: {
+        status: "DELIVERED",
+        shopDelivery: true,
+        items: {
+          some: {
+            product: {
+              shopId: shopId,
+            },
+          },
+        },
+      },
+      select: {
+        id: true,
+        createdAt: true,
+        orderNumber: true,
+        shippingAddress: {
+          select: {
+            name: true,
+          },
+        },
+        items: {
+          where: { product: { shopId } },
+          select: {
+            product: { select: { name: true } },
+            quantity: true,
+            imageUrl: true,
+            size: { select: { id: true, name: true } },
+            longSize: { select: { id: true, name: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      skip: 0,
+      take: 20,
+    });
+    return { success: true, orders: orderList };
+  } catch (error) {
+    return { success: false, message: `${error}` };
+  }
+};
+
+export const orderShopDeliveryUpdateShopService = async (
+  shopId: string,
+  orderId: string,
+) => {
+  try {
+    const orderList = await prisma.order.update({
+      where: {
+        id: orderId,
+        items: {
+          some: {
+            product: {
+              shopId: shopId,
+            },
+          },
+        },
+      },
+      data: { shopDelivery: true },
+    });
+    return { success: true, orders: orderList };
   } catch (error) {
     return { success: false, message: `${error}` };
   }

@@ -244,10 +244,10 @@ model Order {
   totalAmount    Float
 
   comment String?
-
   shippingAddressId String
   shippingAddress   ShippingAddress @relation(fields: [shippingAddressId], references: [id], onDelete: Restrict)
   deliveryCharge    Float           @default(0.00)
+  shopDelivery      Boolean         @default(false)
   items             OrderItem[]
   payment           Payment?
   vendorPayouts     VendorPayout[] // ✅ ADD THIS

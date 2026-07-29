@@ -29,6 +29,8 @@ import {
   updateOrderItemSizeController,
   updateOrderItemLongSizeController,
   updateOrderPriceController,
+  getOrderByShopId,
+  updateOrderShopDeliveryStatusByShopIdOrderId,
 } from "./order.controller";
 
 const router = Router();
@@ -45,9 +47,30 @@ router.post(
 
 router.post("/user", asyncHandler(createOrderControllerOpen));
 router.get("/track", asyncHandler(trackOrderController));
-router.get("/day/:day", authenticate, authorize("ADMIN"), asyncHandler(getDayOrdersController));
-router.get("/days/summary", authenticate, authorize("ADMIN"), asyncHandler(getDaysSummaryController));
-router.get("/contacts/export", authenticate, authorize("ADMIN"), asyncHandler(exportContactsController));
+router.get(
+  "/day/:day",
+  authenticate,
+  authorize("ADMIN"),
+  asyncHandler(getDayOrdersController),
+);
+router.get("/shop/:shopId", asyncHandler(getOrderByShopId));
+router.patch(
+  "/shop/:shopId/order/:orderId",
+  asyncHandler(updateOrderShopDeliveryStatusByShopIdOrderId),
+);
+
+router.get(
+  "/days/summary",
+  authenticate,
+  authorize("ADMIN"),
+  asyncHandler(getDaysSummaryController),
+);
+router.get(
+  "/contacts/export",
+  authenticate,
+  authorize("ADMIN"),
+  asyncHandler(exportContactsController),
+);
 router.post("/pathao", asyncHandler(pathaoOrderController));
 router.get("/", authenticate, asyncHandler(getOrderListController));
 router.get("/:id", asyncHandler(getOpenOrderController));
@@ -85,9 +108,24 @@ router.post(
   validate(addOrderItemSchema),
   asyncHandler(addOrderItemController),
 );
-router.patch("/items/:itemId/image", authenticate, authorize("ADMIN"), asyncHandler(updateOrderItemImageController));
-router.patch("/items/:itemId", authenticate, authorize("ADMIN"), asyncHandler(updateOrderItemController));
+router.patch(
+  "/items/:itemId/image",
+  authenticate,
+  authorize("ADMIN"),
+  asyncHandler(updateOrderItemImageController),
+);
+router.patch(
+  "/items/:itemId",
+  authenticate,
+  authorize("ADMIN"),
+  asyncHandler(updateOrderItemController),
+);
 router.delete("/:id", asyncHandler(deleteOrderController));
-router.delete("/items/:itemId", authenticate, authorize("ADMIN"), asyncHandler(deleteOrderItemController));
+router.delete(
+  "/items/:itemId",
+  authenticate,
+  authorize("ADMIN"),
+  asyncHandler(deleteOrderItemController),
+);
 
 export default router;
