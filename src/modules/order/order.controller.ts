@@ -30,6 +30,7 @@ import {
   updateOrderService,
   orderGetbyShopService,
   orderShopDeliveryUpdateShopService,
+  orderShopDeliveryBulkUpdateShopService,
 } from "./order.service";
 import {
   OrderStatus,
@@ -247,6 +248,19 @@ export const updateOrderShopDeliveryStatusByShopIdOrderId = async (
   const shopId = req.params.shopId;
   const orderId = req.params.orderId;
   const result = await orderShopDeliveryUpdateShopService(shopId, orderId);
+  res.status(200).json(result);
+};
+
+export const updateOrderShopDeliveryBulkByShopId = async (
+  req: Request,
+  res: Response,
+) => {
+  const shopId = req.params.shopId;
+  const orderIds = req.body.orderIds as string[];
+  const result = await orderShopDeliveryBulkUpdateShopService(
+    shopId,
+    orderIds,
+  );
   res.status(200).json(result);
 };
 

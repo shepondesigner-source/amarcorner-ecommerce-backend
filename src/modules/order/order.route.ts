@@ -31,6 +31,7 @@ import {
   updateOrderPriceController,
   getOrderByShopId,
   updateOrderShopDeliveryStatusByShopIdOrderId,
+  updateOrderShopDeliveryBulkByShopId,
 } from "./order.controller";
 
 const router = Router();
@@ -57,6 +58,10 @@ router.get("/shop/:shopId", asyncHandler(getOrderByShopId));
 router.patch(
   "/shop/:shopId/order/:orderId",
   asyncHandler(updateOrderShopDeliveryStatusByShopIdOrderId),
+);
+router.patch(
+  "/shop/:shopId/orders",
+  asyncHandler(updateOrderShopDeliveryBulkByShopId),
 );
 
 router.get(

@@ -1010,6 +1010,13 @@ export const deleteOrderService = async (orderId: string) => {
 
 export const orderGetbyShopService = async (shopId: string) => {
   try {
+    const shopInfo = await prisma.shop.findFirst({
+      where: { id: shopId },
+      select: {
+        name: true,
+        imageUrl: true,
+      },
+    });
     const orderList = await prisma.order.findMany({
       where: {
         status: "CONFIRMED",
@@ -1046,7 +1053,7 @@ export const orderGetbyShopService = async (shopId: string) => {
       skip: 0,
       take: 20,
     });
-    return { success: true, orders: orderList };
+    return { success: true, orders: orderList, shop: shopInfo };
   } catch (error) {
     return { success: false, message: `${error}` };
   }
@@ -1071,6 +1078,30 @@ export const orderShopDeliveryUpdateShopService = async (
       data: { shopDelivery: true },
     });
     return { success: true, orders: orderList };
+  } catch (error) {
+    return { success: false, message: `${error}` };
+  }
+};
+
+export const orderShopDeliveryBulkUpdateShopService = async (
+  shopId: string,
+  orderIds: string[],
+) => {
+  try {
+    const result = await prisma.order.updateMany({
+      where: {
+        id: { in: orderIds },
+        items: {
+          some: {
+            product: {
+              shopId: shopId,
+            },
+          },
+        },
+      },
+      data: { shopDelivery: true },
+    });
+    return { success: true, count: result.count };
   } catch (error) {
     return { success: false, message: `${error}` };
   }
