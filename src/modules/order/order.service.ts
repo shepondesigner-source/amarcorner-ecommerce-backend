@@ -1033,6 +1033,8 @@ export const orderGetbyShopService = async (shopId: string) => {
         id: true,
         createdAt: true,
         orderNumber: true,
+        carrybeeStatus: true,
+        pathaoStatus: true,
         shippingAddress: {
           select: {
             name: true,
