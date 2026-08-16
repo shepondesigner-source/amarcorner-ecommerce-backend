@@ -67,6 +67,11 @@ export const uploadToCloudinary = async (
     try {
       // Try converting to WebP
       bufferToUpload = await sharp(fileBuffer).webp({ quality: 80 }).toBuffer();
+      try {
+        bufferToUpload = await applyWatermark(bufferToUpload);
+      } catch {
+        // If watermarking fails, upload the plain WebP
+      }
     } catch {
       // If sharp fails (SVG or unsupported), upload original
       bufferToUpload = fileBuffer;
@@ -76,21 +81,6 @@ export const uploadToCloudinary = async (
       const stream = cloudinary.uploader.upload_stream(
         {
           folder,
-          transformation: [
-            {
-              overlay: {
-                font_family: "Arial",
-                font_size: 48,
-                font_weight: "bold",
-                text: "Amar Corner",
-              },
-              gravity: "south_west",
-              x: 20,
-              y: 20,
-              color: "#ffffff",
-              opacity: 13, // 👈 LOWER = more transparent
-            },
-          ],
         },
         (error, result) => {
           if (error || !result) {
