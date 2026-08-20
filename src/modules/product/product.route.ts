@@ -7,6 +7,7 @@ import {
   getProductsSchema,
   deleteProductSchema,
   createVendorProductSchema,
+  duplicateProductSchema,
 } from "./product.schema";
 import { validate } from "../../core/validation/validate";
 import { asyncHandler } from "../../core/utils/asyncHandler";
@@ -14,6 +15,7 @@ import {
   createProduct,
   createVendorProduct,
   deleteProduct,
+  duplicateProduct,
   getDiscountPricesByIds,
   getdProductDeliveryCharge,
   getdProductDeliveryChargeOpen,
@@ -88,6 +90,14 @@ router.delete(
   authorize("ADMIN"),
   validate(deleteProductSchema),
   asyncHandler(deleteProduct),
+);
+
+router.post(
+  "/duplicate",
+  authenticate,
+  authorize("ADMIN"),
+  validate(duplicateProductSchema),
+  asyncHandler(duplicateProduct),
 );
 
 export default router;

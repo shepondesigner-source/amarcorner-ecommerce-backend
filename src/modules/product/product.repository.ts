@@ -30,6 +30,12 @@ export class ProductRepository {
     return prisma.product.create({ data });
   }
 
+  duplicateMany(data: any, count: number) {
+    return prisma.$transaction(
+      Array.from({ length: count }, () => prisma.product.create({ data })),
+    );
+  }
+
   findPaginated(where: any, skip: number, take: number) {
     return prisma.product.findMany({
       where,

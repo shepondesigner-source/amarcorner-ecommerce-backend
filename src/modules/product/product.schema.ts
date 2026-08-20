@@ -117,6 +117,14 @@ export const deleteProductSchema = z.object({
   }),
 });
 
+/* ---------- Duplicate ---------- */
+export const duplicateProductSchema = z.object({
+  body: z.object({
+    productId: id,
+    duplicateNumber: z.coerce.number().int().min(1).max(50),
+  }),
+});
+
 export const productFilterSchema = z.object({
   q: z.string().optional(),
 

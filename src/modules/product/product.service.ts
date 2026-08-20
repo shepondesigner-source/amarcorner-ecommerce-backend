@@ -1,5 +1,6 @@
 import { Product } from "../../../generated/prisma";
 import { prisma } from "../../config/prisma";
+import { NotFoundError } from "../../core/errors/HttpError";
 import {
   deleteFromCloudinaryByUrl,
   uploadToCloudinary,
@@ -316,6 +317,26 @@ export class ProductService {
         ? { set: longSizeIds.map((id: string) => ({ id })) }
         : undefined,
     });
+  }
+
+  async duplicate(productId: string, duplicateNumber: number) {
+    const product = await this.repo.findById(productId);
+    if (!product) throw new NotFoundError("Product not found");
+
+    const { id, createdAt, updatedAt, sizes, longSizes, ...rest } = product;
+
+    return this.repo.duplicateMany(
+      {
+        ...rest,
+        sizes: sizes?.length
+          ? { connect: sizes.map((s) => ({ id: s.id })) }
+          : undefined,
+        longSizes: longSizes?.length
+          ? { connect: longSizes.map((s) => ({ id: s.id })) }
+          : undefined,
+      },
+      duplicateNumber,
+    );
   }
 
   async delete(id: string) {

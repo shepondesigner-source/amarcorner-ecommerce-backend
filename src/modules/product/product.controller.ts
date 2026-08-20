@@ -38,6 +38,12 @@ export const deleteProduct = async (req: Request, res: Response) => {
   res.status(204).send();
 };
 
+export const duplicateProduct = async (req: Request, res: Response) => {
+  const { productId, duplicateNumber } = req.body;
+  const products = await service.duplicate(productId, duplicateNumber);
+  res.status(201).json(products);
+};
+
 export const getFeaturedProduct = async (req: Request, res: Response) => {
   const featured = await service.getFeaturedProduct();
   res.json(featured);
