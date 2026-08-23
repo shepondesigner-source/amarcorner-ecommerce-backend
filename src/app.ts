@@ -15,9 +15,6 @@ const allowedOrigins = config.frontendUrl.split(",");
 const limiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 15 min
   max: 500, // max requests per IP
-  standardHeaders: true,
-  legacyHeaders: false,
-
   message: {
     success: false,
     message: "Too many requests, please try again later.",
