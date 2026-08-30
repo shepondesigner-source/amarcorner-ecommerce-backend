@@ -36,4 +36,10 @@ export const config = {
     botToken: process.env.TELEGRAM_BOT_TOKEN || "",
     chatId: process.env.TELEGRAM_CHAT_ID || "",
   },
+
+  sms: {
+    baseUrl: process.env.SMS_BASE_URL || "https://msg.mram.com.bd",
+    apiKey: process.env.SMS_API_KEY || "",
+    senderId: process.env.SMS_SENDER_ID || "",
+  },
 };

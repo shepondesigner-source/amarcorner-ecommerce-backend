@@ -21,6 +21,7 @@ import otpRoutes from "./modules/otp/otp.routes";
 import complainRoutes from "./modules/complain/complain.route";
 import reviewRoutes from "./modules/review/review.route";
 import carrybeeRoutes from "./carrybee/carrybee.route";
+import smsRoutes from "./modules/sms/sms.route";
 const router = Router();
 
 router.use("/auth", authRoutes);
@@ -67,6 +68,7 @@ router.use("/vendor-pay", vendorPaymentRoutes);
 router.use("/complains", complainRoutes);
 router.use("/review", reviewRoutes);
 router.use("/carrybee", carrybeeRoutes);
+router.use("/sms", smsRoutes);
 
 // Health check route
 router.get("/health", (_, res) => {
