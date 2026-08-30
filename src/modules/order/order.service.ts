@@ -10,8 +10,28 @@ import {
   buildOrderNotificationMessage,
   sendTelegramMessage,
 } from "../../core/service/telegram.service";
+import { SmsService } from "../sms/sms.service";
+import { shortenUrl } from "../../core/utils/shortenUrl";
 
 import bcrypt from "bcryptjs";
+
+async function sendOrderConfirmationSms(order: {
+  id: string;
+  user: { phone: string };
+}) {
+  try {
+    const orderUrl = await shortenUrl(
+      `https://www.amarcorner.com/order/${order.id}`,
+    );
+    await SmsService.send({
+      contacts: order.user.phone,
+      type: "unicode",
+      message: `আপনার অর্ডারটি কনফার্ম করা হয়েছে! ইনভয়েস দেখুন: ${orderUrl}`,
+    });
+  } catch (err) {
+    console.error("Failed to send order confirmation SMS:", err);
+  }
+}
 
 type CreateOrderInputOpen = {
   deliveryCharge: number;
@@ -628,6 +648,7 @@ export const updateOrderService = async (
         include: { product: true },
       },
       payment: true,
+      user: { select: { phone: true } },
     },
   });
 
@@ -697,13 +718,19 @@ export const updateOrderService = async (
             }
           : undefined;
 
-    return prisma.order.update({
+    const updatedOrder = await prisma.order.update({
       where: { id: orderId },
       data: {
         status: payload.status,
         vendorPayouts: vendorPayoutUpdate,
       },
     });
+
+    if (payload.status === "CONFIRMED" && order.status !== "CONFIRMED") {
+      void sendOrderConfirmationSms({ id: updatedOrder.id, user: order.user });
+    }
+
+    return updatedOrder;
   }
 
   /* ================= ADMIN ================= */
@@ -724,7 +751,7 @@ export const updateOrderService = async (
           }
         : undefined;
 
-  return prisma.order.update({
+  const updatedOrder = await prisma.order.update({
     where: { id: orderId },
     data: {
       status: payload.status,
@@ -737,6 +764,12 @@ export const updateOrderService = async (
       vendorPayouts: adminVendorPayoutUpdate,
     },
   });
+
+  if (payload.status === "CONFIRMED" && order.status !== "CONFIRMED") {
+    void sendOrderConfirmationSms({ id: updatedOrder.id, user: order.user });
+  }
+
+  return updatedOrder;
 };
 
 export const updateOrderAmountService = async (
