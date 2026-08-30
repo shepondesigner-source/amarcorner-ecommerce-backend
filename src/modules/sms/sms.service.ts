@@ -29,6 +29,7 @@ export type SendSmsOptions = {
   message: string;
   type?: SmsType;
   label?: SmsLabel;
+  scheduledDateTime?: string;
 };
 
 function normalizeContacts(contacts: string | string[]) {
@@ -39,19 +40,41 @@ function normalizeContacts(contacts: string | string[]) {
     .join("+");
 }
 
-function extractErrorCode(data: unknown): string | undefined {
+/**
+ * The gateway is inconsistent about how it reports errors: sometimes a bare
+ * code ("1003"), sometimes "Error: 1003", sometimes JSON with error_code/
+ * error_msg (and its own error_msg, e.g. "Api Key Not Found", is more
+ * specific than our static table) — and sometimes it uses a non-2xx status
+ * for the same payload. Handle all of these.
+ */
+function parseGatewayError(data: unknown): string | undefined {
   if (data === null || data === undefined) return undefined;
 
-  if (typeof data === "number" || typeof data === "string") {
-    const value = String(data).trim();
-    return SMS_ERROR_MESSAGES[value] ? value : undefined;
+  if (typeof data === "number") {
+    const code = String(data);
+    return SMS_ERROR_MESSAGES[code];
+  }
+
+  if (typeof data === "string") {
+    const trimmed = data.trim();
+    if (SMS_ERROR_MESSAGES[trimmed]) return SMS_ERROR_MESSAGES[trimmed];
+
+    const match = trimmed.match(/^error:?\s*(\d{4})$/i);
+    const code = match?.[1];
+    return code ? SMS_ERROR_MESSAGES[code] : undefined;
   }
 
   if (typeof data === "object") {
     const record = data as Record<string, unknown>;
-    const candidate = record.error ?? record.error_code ?? record.response_code;
-    if (candidate !== undefined && SMS_ERROR_MESSAGES[String(candidate)]) {
-      return String(candidate);
+    const rawCode = record.error_code ?? record.error ?? record.response_code;
+    const code = rawCode !== undefined ? String(rawCode) : undefined;
+    const rawMessage = record.error_msg ?? record.message;
+
+    if (record.status === "failed" || (code && SMS_ERROR_MESSAGES[code])) {
+      if (typeof rawMessage === "string" && rawMessage.trim()) return rawMessage;
+      return code
+        ? SMS_ERROR_MESSAGES[code] || `SMS gateway error ${code}`
+        : "SMS gateway request failed";
     }
   }
 
@@ -64,25 +87,49 @@ function assertConfigured() {
   }
 }
 
-async function requestGateway(path: string, params?: Record<string, string>) {
+type GatewayRequest = {
+  method?: "get" | "post";
+  params?: Record<string, string>;
+  data?: Record<string, unknown>;
+};
+
+async function requestGateway(path: string, options: GatewayRequest = {}) {
   assertConfigured();
+  const { method = "get", params, data: body } = options;
 
-  const { data } = await axios.get(`${config.sms.baseUrl}${path}`, {
-    params,
-  });
+  let data: unknown;
+  try {
+    const res = await axios.request({
+      url: `${config.sms.baseUrl}${path}`,
+      method,
+      params,
+      data: body,
+    });
+    data = res.data;
+  } catch (err) {
+    if (axios.isAxiosError(err) && err.response) {
+      data = err.response.data;
+    } else {
+      throw new BadRequestError("Failed to reach SMS gateway");
+    }
+  }
 
-  const errorCode = extractErrorCode(data);
-  if (errorCode) {
-    throw new BadRequestError(
-      SMS_ERROR_MESSAGES[errorCode] || `SMS gateway error ${errorCode}`,
-    );
+  const errorMessage = parseGatewayError(data);
+  if (errorMessage) {
+    throw new BadRequestError(errorMessage);
   }
 
   return data;
 }
 
 export const SmsService = {
-  async send({ contacts, message, type = "text", label }: SendSmsOptions) {
+  async send({
+    contacts,
+    message,
+    type = "text",
+    label,
+    scheduledDateTime,
+  }: SendSmsOptions) {
     const contactList = normalizeContacts(contacts);
     if (!contactList) {
       throw new BadRequestError("At least one contact number is required");
@@ -95,12 +142,16 @@ export const SmsService = {
     }
 
     return requestGateway("/smsapi", {
-      api_key: config.sms.apiKey,
-      type,
-      contacts: contactList,
-      senderid: config.sms.senderId,
-      msg: message,
-      ...(label ? { label } : {}),
+      method: "post",
+      data: {
+        api_key: config.sms.apiKey,
+        senderid: config.sms.senderId,
+        type,
+        msg: message,
+        contacts: contactList,
+        ...(scheduledDateTime ? { scheduledDateTime } : {}),
+        ...(label ? { label } : {}),
+      },
     });
   },
 

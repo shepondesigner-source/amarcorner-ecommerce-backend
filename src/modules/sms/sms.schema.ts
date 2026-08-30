@@ -9,6 +9,7 @@ export const sendSmsSchema = z.object({
     message: z.string().min(1),
     type: z.enum(["text", "unicode"]).optional(),
     label: z.enum(["transactional", "promotional"]).optional(),
+    scheduledDateTime: z.string().optional(),
   }),
 });
 

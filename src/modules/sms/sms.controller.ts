@@ -2,8 +2,14 @@ import { Request, Response } from "express";
 import { SmsService } from "./sms.service";
 
 export const sendSms = async (req: Request, res: Response) => {
-  const { contacts, message, type, label } = req.body;
-  const result = await SmsService.send({ contacts, message, type, label });
+  const { contacts, message, type, label, scheduledDateTime } = req.body;
+  const result = await SmsService.send({
+    contacts,
+    message,
+    type,
+    label,
+    scheduledDateTime,
+  });
   res.status(201).json(result);
 };
 
