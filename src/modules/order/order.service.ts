@@ -26,7 +26,7 @@ async function sendOrderConfirmationSms(order: {
     await SmsService.send({
       contacts: order.user.phone,
       type: "unicode",
-      message: `আপনার অর্ডারটি কনফার্ম করা হয়েছে! ইনভয়েস দেখুন: ${orderUrl}`,
+      message: `আপনার অর্ডারটির ইনভয়েস দেখুন: ${orderUrl}`,
     });
   } catch (err) {
     console.error("Failed to send order confirmation SMS:", err);
