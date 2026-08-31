@@ -14,7 +14,7 @@ const allowedOrigins = config.frontendUrl.split(",");
 // example: FRONTEND_URL=http://localhost:3000,https://yourdomain.com
 const limiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 15 min
-  max: 500, // max requests per IP
+  max: 1000, // max requests per IP
   message: {
     success: false,
     message: "Too many requests, please try again later.",
