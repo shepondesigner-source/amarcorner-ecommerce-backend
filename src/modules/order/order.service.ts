@@ -11,7 +11,6 @@ import {
   sendTelegramMessage,
 } from "../../core/service/telegram.service";
 import { SmsService } from "../sms/sms.service";
-import { shortenUrl } from "../shortlink/shortlink.service";
 
 import bcrypt from "bcryptjs";
 
@@ -20,9 +19,7 @@ async function sendOrderConfirmationSms(order: {
   user: { phone: string };
 }) {
   try {
-    const orderUrl = await shortenUrl(
-      `https://www.amarcorner.com/order/${order.id}`,
-    );
+    const orderUrl = `https://www.amarcorner.com/order/${order.id}`;
     await SmsService.send({
       contacts: order.user.phone,
       type: "unicode",
