@@ -387,3 +387,12 @@ model Complain {
   @@index([email])
   @@index([phone])
 }
+
+model ShortLink {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  url       String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([code])
+}

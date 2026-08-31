@@ -11,7 +11,7 @@ import {
   sendTelegramMessage,
 } from "../../core/service/telegram.service";
 import { SmsService } from "../sms/sms.service";
-import { shortenUrl } from "../../core/utils/shortenUrl";
+import { shortenUrl } from "../shortlink/shortlink.service";
 
 import bcrypt from "bcryptjs";
 
