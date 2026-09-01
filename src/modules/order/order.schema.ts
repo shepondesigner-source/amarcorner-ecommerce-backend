@@ -115,6 +115,18 @@ export const addOrderItemSchema = z.object({
   }),
 });
 
+export const updateOrderShippingAddressSchema = z.object({
+  params: z.object({
+    id: z.cuid(), // Order ID from URL
+  }),
+  body: z.object({
+    name: z.string().min(2).optional(),
+    phone: z.string().min(8).optional(),
+    district: z.string().min(2).optional(),
+    address: z.string().min(5).optional(),
+  }),
+});
+
 export const trackOrderSchema = z.object({
   query: z.object({
     orderNumber: z.string().regex(/^\d+$/, "Order number must be numeric"),

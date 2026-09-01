@@ -5,6 +5,7 @@ import {
   updateOrderItemSizeSchema,
   updateOrderItemLongSizeSchema,
   updateOrderSchema,
+  updateOrderShippingAddressSchema,
 } from "./order.schema";
 import { authenticate } from "../../core/middlewares/auth.middleware";
 import { authorize } from "../../core/middlewares/authorize.middleware";
@@ -29,6 +30,7 @@ import {
   updateOrderItemSizeController,
   updateOrderItemLongSizeController,
   updateOrderPriceController,
+  updateOrderShippingAddressController,
   getOrderByShopId,
   updateOrderShopDeliveryStatusByShopIdOrderId,
   updateOrderShopDeliveryBulkByShopId,
@@ -91,6 +93,13 @@ router.patch(
   authorize("ADMIN"),
   validate(updateOrderAmountSchema),
   asyncHandler(updateOrderPriceController),
+);
+router.patch(
+  "/:id/shipping-address",
+  authenticate,
+  authorize("ADMIN"),
+  validate(updateOrderShippingAddressSchema),
+  asyncHandler(updateOrderShippingAddressController),
 );
 router.patch(
   "/:orderId/items/:itemId/size",

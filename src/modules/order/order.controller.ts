@@ -9,6 +9,7 @@ import {
   updateOrderItemSizeSchema,
   updateOrderItemLongSizeSchema,
   updateOrderSchema,
+  updateOrderShippingAddressSchema,
 } from "./order.schema";
 import {
   addOrderItemService,
@@ -28,6 +29,7 @@ import {
   updateOrderItemSizeService,
   updateOrderItemLongSizeService,
   updateOrderService,
+  updateOrderShippingAddressService,
   orderGetbyShopService,
   orderShopDeliveryUpdateShopService,
   orderShopDeliveryBulkUpdateShopService,
@@ -181,6 +183,26 @@ export const updateOrderPriceController = async (
   res.status(200).json({
     message: "Order updated successfully",
     data: order,
+  });
+};
+
+export const updateOrderShippingAddressController = async (
+  req: Request,
+  res: Response,
+) => {
+  const parsed = updateOrderShippingAddressSchema.parse({
+    params: req.params,
+    body: req.body,
+  });
+
+  const shippingAddress = await updateOrderShippingAddressService(
+    parsed.params.id,
+    parsed.body,
+  );
+
+  res.status(200).json({
+    message: "Shipping address updated successfully",
+    data: shippingAddress,
   });
 };
 

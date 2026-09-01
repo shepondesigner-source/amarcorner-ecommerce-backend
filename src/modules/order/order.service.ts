@@ -781,6 +781,28 @@ export const updateOrderAmountService = async (
     },
   });
 };
+
+export const updateOrderShippingAddressService = async (
+  orderId: string,
+  data: {
+    name?: string;
+    phone?: string;
+    district?: string;
+    address?: string;
+  },
+) => {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: { shippingAddressId: true },
+  });
+
+  if (!order) throw new AppError("Order not found", 404);
+
+  return prisma.shippingAddress.update({
+    where: { id: order.shippingAddressId },
+    data,
+  });
+};
 export const getOpenOrderService = async (orderId: string) => {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
