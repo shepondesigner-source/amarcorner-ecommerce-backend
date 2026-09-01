@@ -15,15 +15,15 @@ import { SmsService } from "../sms/sms.service";
 import bcrypt from "bcryptjs";
 
 async function sendOrderConfirmationSms(order: {
-  id: string;
+  orderNumber: number;
+  price: number;
   user: { phone: string };
 }) {
   try {
-    const orderUrl = `https://www.amarcorner.com/order/${order.id}`;
     await SmsService.send({
-      contacts: order.user.phone,
-      type: "unicode",
-      message: `আপনার অর্ডারটির ইনভয়েস দেখুন: ${orderUrl}`,
+      contacts: `88${order.user.phone}`,
+      type: "text",
+      message: `Order confirmed! Price:${order.price}TK. Hotline:01410620600 Web:amarcorner.com`,
     });
   } catch (err) {
     console.error("Failed to send order confirmation SMS:", err);
@@ -407,6 +407,14 @@ export const createOrderServiceOpen = async (data: CreateOrderInputOpen) => {
     return createdOrder;
   });
 
+  if (order.orderNumber) {
+    void sendOrderConfirmationSms({
+      orderNumber: order.orderNumber,
+      price: totalAmount,
+      user: user,
+    });
+  }
+
   // void sendTelegramMessage(
   //   buildOrderNotificationMessage({
   //     orderNumber: order.orderNumber,
@@ -723,9 +731,9 @@ export const updateOrderService = async (
       },
     });
 
-    if (payload.status === "CONFIRMED" && order.status !== "CONFIRMED") {
-      void sendOrderConfirmationSms({ id: updatedOrder.id, user: order.user });
-    }
+    // if (payload.status === "CONFIRMED" && order.status !== "CONFIRMED") {
+    //   void sendOrderConfirmationSms({ id: updatedOrder.id, user: order.user });
+    // }
 
     return updatedOrder;
   }
@@ -762,9 +770,9 @@ export const updateOrderService = async (
     },
   });
 
-  if (payload.status === "CONFIRMED" && order.status !== "CONFIRMED") {
-    void sendOrderConfirmationSms({ id: updatedOrder.id, user: order.user });
-  }
+  // if (payload.status === "CONFIRMED" && order.status !== "CONFIRMED") {
+  //   void sendOrderConfirmationSms({ id: updatedOrder.id, user: order.user });
+  // }
 
   return updatedOrder;
 };
