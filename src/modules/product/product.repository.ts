@@ -318,7 +318,12 @@ export class ProductRepository {
     const userAddress = await prisma.shippingAddress.findFirst({
       where: { userId: userId, isDefault: true },
     });
-    if (userAddress?.district === "Dhaka") {
+    if (
+      userAddress?.district === "Dhaka (Keraniganj)" ||
+      userAddress?.district === "Dhaka (Savar)"
+    ) {
+      return { rate: 80 };
+    } else if (userAddress?.district === "Dhaka") {
       return { rate: 70 };
     } else {
       return { rate: 120 };
@@ -326,7 +331,9 @@ export class ProductRepository {
   }
 
   async getDeliveryChargeOpen(district: string, category: string) {
-    if (district === "Dhaka") {
+    if (district === "Dhaka (Keraniganj)" || district === "Dhaka (Savar)") {
+      return { rate: 80 };
+    } else if (district === "Dhaka") {
       if (category === "Fruits") {
         return { rate: 200 };
       }
