@@ -49,6 +49,7 @@ export const createCarrybeeFromOrderSchema = z.object({
     areaId: z.number().int().positive().optional(),
     deliveryType: z.number().int().min(1).max(2).default(1),
     itemWeight: z.number().int().min(1).max(25000).default(500),
+    instruction: z.string().max(255),
   }),
 });
 

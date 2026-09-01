@@ -1,7 +1,8 @@
 import axios from "axios";
 import { prisma } from "../config/prisma";
 
-const BASE_URL = process.env.CARRYBEE_BASE_URL || "https://sandbox.carrybee.com";
+const BASE_URL =
+  process.env.CARRYBEE_BASE_URL || "https://sandbox.carrybee.com";
 
 const headers = () => ({
   "Client-ID": process.env.CARRYBEE_CLIENT_ID!,
@@ -11,7 +12,9 @@ const headers = () => ({
 });
 
 export const getCitiesService = async () => {
-  const res = await axios.get(`${BASE_URL}/api/v2/cities`, { headers: headers() });
+  const res = await axios.get(`${BASE_URL}/api/v2/cities`, {
+    headers: headers(),
+  });
   return res.data;
 };
 
@@ -82,12 +85,16 @@ export type CarrybeeStoreBody = {
 };
 
 export const getStoresService = async () => {
-  const res = await axios.get(`${BASE_URL}/api/v2/stores`, { headers: headers() });
+  const res = await axios.get(`${BASE_URL}/api/v2/stores`, {
+    headers: headers(),
+  });
   return res.data;
 };
 
 export const createStoreService = async (body: CarrybeeStoreBody) => {
-  const res = await axios.post(`${BASE_URL}/api/v2/stores`, body, { headers: headers() });
+  const res = await axios.post(`${BASE_URL}/api/v2/stores`, body, {
+    headers: headers(),
+  });
   return res.data;
 };
 
@@ -102,9 +109,10 @@ export const createCarrybeeOrderFromOrderService = async (
   orderId: string,
   cityId: number,
   zoneId: number,
-  areaId?: number,
+  areaId: number | undefined,
   deliveryType: number = 1,
   itemWeight: number = 500,
+  instruction?: string,
 ) => {
   const order = await prisma.order.findFirstOrThrow({
     where: { id: orderId },
@@ -119,7 +127,8 @@ export const createCarrybeeOrderFromOrderService = async (
   });
 
   const shop = order.items[0]?.product.shop;
-  if (!shop?.carrybeeId) throw new Error("Shop has no Carrybee store ID configured");
+  if (!shop?.carrybeeId)
+    throw new Error("Shop has no Carrybee store ID configured");
 
   const payload: CarrybeeOrderBody = {
     store_id: shop.carrybeeId,
@@ -136,7 +145,7 @@ export const createCarrybeeOrderFromOrderService = async (
     item_quantity: order.items.reduce((sum, i) => sum + i.quantity, 0),
     item_weight: itemWeight,
     collectable_amount: Math.round(order.totalAmount),
-    special_instruction: "পার্সেলটি চেক করার প্রয়োজন হলে ডেলিভারি ম্যান এর সামনে খুলবেন!",
+    special_instruction: instruction,
   };
 
   const res = await axios.post(`${BASE_URL}/api/v2/orders`, payload, {

@@ -223,7 +223,7 @@ export const updateOrderItemController = async (
 };
 
 export const pathaoOrderController = async (req: Request, res: Response) => {
-  const order = await createPathaoOrder(req.body.id);
+  const order = await createPathaoOrder(req.body.id, req.body.instruction);
 
   res.status(200).json({ message: "Pathao order created successfully" });
 };
@@ -257,10 +257,7 @@ export const updateOrderShopDeliveryBulkByShopId = async (
 ) => {
   const shopId = req.params.shopId;
   const orderIds = req.body.orderIds as string[];
-  const result = await orderShopDeliveryBulkUpdateShopService(
-    shopId,
-    orderIds,
-  );
+  const result = await orderShopDeliveryBulkUpdateShopService(shopId, orderIds);
   res.status(200).json(result);
 };
 
