@@ -29,7 +29,7 @@ function buildWatermarkSvg(imageWidth: number) {
     </filter>
   </defs>
   <rect x="1.5" y="1.5" width="${badgeWidth - 3}" height="${badgeHeight - 3}" rx="${badgeHeight / 2}"
-    fill="#000000" fill-opacity="0.42" filter="url(#shadow)" />
+    fill="#000000" fill-opacity="0.32" filter="url(#shadow)" />
   <g transform="translate(${paddingX}, ${pointerY}) scale(${pointerSize / 24})">
     <path fill="#ffffff" d="M4 4l7.07 17 2.51-7.39L21 11.07z"/>
   </g>
