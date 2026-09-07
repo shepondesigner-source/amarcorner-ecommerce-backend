@@ -5,10 +5,28 @@ export const FacebookReviewRepository = {
   create: (data: { name: string; imageId: string; reviewType?: ReviewType }) =>
     prisma.facebookReview.create({ data }),
 
-  findAll: (reviewType?: ReviewType) =>
-    prisma.facebookReview.findMany({
-      where: reviewType ? { reviewType } : {},
+  findAll: (options: {
+    reviewType?: ReviewType;
+    page?: number;
+    limit?: number;
+  }) => {
+    const where = options.reviewType ? { reviewType: options.reviewType } : {};
+    const paginated =
+      options.page !== undefined && options.limit !== undefined;
+
+    return prisma.facebookReview.findMany({
+      where,
       orderBy: { createdAt: "desc" },
+      ...(paginated && {
+        skip: (options.page! - 1) * options.limit!,
+        take: options.limit,
+      }),
+    });
+  },
+
+  count: (reviewType?: ReviewType) =>
+    prisma.facebookReview.count({
+      where: reviewType ? { reviewType } : {},
     }),
 
   findById: (id: number) =>

@@ -22,8 +22,23 @@ export const FacebookReviewService = {
     });
   },
 
-  getAllFacebookReviews: async (reviewType?: ReviewType) => {
-    return FacebookReviewRepository.findAll(reviewType);
+  getAllFacebookReviews: async (options: {
+    reviewType?: ReviewType;
+    page?: number;
+    limit?: number;
+  }) => {
+    const reviews = await FacebookReviewRepository.findAll(options);
+
+    if (options.page === undefined || options.limit === undefined) {
+      return { reviews };
+    }
+
+    const total = await FacebookReviewRepository.count(options.reviewType);
+    return {
+      reviews,
+      total,
+      totalPages: Math.ceil(total / options.limit),
+    };
   },
 
   getFacebookReviewById: async (id: number) => {

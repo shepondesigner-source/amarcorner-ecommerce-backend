@@ -17,10 +17,21 @@ export const FacebookReviewController = {
   getAll: async (req: Request, res: Response, next: NextFunction) => {
     try {
       const reviewType = req.query.reviewType as any;
-      const reviews = await FacebookReviewService.getAllFacebookReviews(
-        reviewType,
-      );
-      res.json({ success: true, data: reviews });
+      const page = req.query.page ? Number(req.query.page) : undefined;
+      const limit = req.query.limit ? Number(req.query.limit) : undefined;
+
+      const { reviews, total, totalPages } =
+        await FacebookReviewService.getAllFacebookReviews({
+          reviewType,
+          page,
+          limit,
+        });
+
+      res.json({
+        success: true,
+        data: reviews,
+        ...(total !== undefined && { total, totalPages }),
+      });
     } catch (err) {
       next(err);
     }
