@@ -84,9 +84,9 @@ export const uploadToCloudinary = async (
           transformation: [
             {
               overlay: { public_id: "watermark_gipnq4" },
-              gravity: "center",
-              x: 802,
-              y: -1100,
+              gravity: "north_east",
+              x: 24,
+              y: 24,
               width: 387,
               height: 242,
               opacity: 80,
