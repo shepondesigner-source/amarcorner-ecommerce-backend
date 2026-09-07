@@ -81,6 +81,17 @@ export const uploadToCloudinary = async (
       const stream = cloudinary.uploader.upload_stream(
         {
           folder,
+          transformation: [
+            {
+              overlay: { public_id: "watermark_gipnq4" },
+              gravity: "center",
+              x: 802,
+              y: -1100,
+              width: 387,
+              height: 242,
+              opacity: 80,
+            },
+          ],
         },
         (error, result) => {
           if (error || !result) {
