@@ -387,3 +387,16 @@ model Complain {
   @@index([email])
   @@index([phone])
 }
+
+enum ReviewType {
+  FACEBOOK
+  WHATSAPP
+  TIKTOK
+}
+model facebookReview{
+  id        Int      @id @default(autoincrement())
+  reviewType ReviewType @default(FACEBOOK)
+  name      String
+  imageId  String
+  createdAt DateTime @default(now())
+}
