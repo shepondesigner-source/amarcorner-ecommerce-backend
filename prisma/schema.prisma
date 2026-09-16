@@ -243,14 +243,11 @@ model Order {
   userId      String
   user        User   @relation(fields: [userId], references: [id], onDelete: Restrict)
 
-  status                 OrderStatus     @default(PENDING)
-  pathaoStatus           PathaoStatus    @default(UNPLACED)
-  carrybeeStatus         CarrybeeStatus  @default(UNPLACED)
-  steadfastStatus        SteadfastStatus @default(UNPLACED)
-  steadfastConsignmentId String?
-  steadfastTrackingCode  String?
-  totalAmount            Float
-
+  status          OrderStatus     @default(PENDING)
+  pathaoStatus    PathaoStatus    @default(UNPLACED)
+  carrybeeStatus  CarrybeeStatus  @default(UNPLACED)
+  steadfastStatus SteadfastStatus @default(UNPLACED)
+  totalAmount     Float
   comment           String?
   shippingAddressId String
   shippingAddress   ShippingAddress @relation(fields: [shippingAddressId], references: [id], onDelete: Restrict)

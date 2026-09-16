@@ -2,7 +2,7 @@ import axios from "axios";
 import { prisma } from "../config/prisma";
 
 const BASE_URL =
-  process.env.STEADFAST_BASE_URL || "https://portal.steadfast.com.bd/api/v1";
+  process.env.STEADFAST_BASE_URL || "https://portal.packzy.com/api/v1";
 
 const headers = () => ({
   "Api-Key": process.env.STEADFAST_API_KEY!,
@@ -87,8 +87,6 @@ export const createSteadfastOrderFromOrderService = async (
     data: {
       status: "SHIPPED",
       steadfastStatus: "PLACED",
-      steadfastConsignmentId: String(data.consignment.consignment_id),
-      steadfastTrackingCode: data.consignment.tracking_code,
     },
   });
 
