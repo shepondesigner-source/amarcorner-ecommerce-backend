@@ -33,6 +33,11 @@ enum CarrybeeStatus {
   UNPLACED
 }
 
+enum SteadfastStatus {
+  PLACED
+  UNPLACED
+}
+
 enum OtpPurpose {
   LOGIN
   REGISTER
@@ -238,12 +243,15 @@ model Order {
   userId      String
   user        User   @relation(fields: [userId], references: [id], onDelete: Restrict)
 
-  status         OrderStatus    @default(PENDING)
-  pathaoStatus   PathaoStatus   @default(UNPLACED)
-  carrybeeStatus CarrybeeStatus @default(UNPLACED)
-  totalAmount    Float
+  status                 OrderStatus     @default(PENDING)
+  pathaoStatus           PathaoStatus    @default(UNPLACED)
+  carrybeeStatus         CarrybeeStatus  @default(UNPLACED)
+  steadfastStatus        SteadfastStatus @default(UNPLACED)
+  steadfastConsignmentId String?
+  steadfastTrackingCode  String?
+  totalAmount            Float
 
-  comment String?
+  comment           String?
   shippingAddressId String
   shippingAddress   ShippingAddress @relation(fields: [shippingAddressId], references: [id], onDelete: Restrict)
   deliveryCharge    Float           @default(0.00)
@@ -393,10 +401,11 @@ enum ReviewType {
   WHATSAPP
   TIKTOK
 }
-model facebookReview{
-  id        Int      @id @default(autoincrement())
+
+model facebookReview {
+  id         Int        @id @default(autoincrement())
   reviewType ReviewType @default(FACEBOOK)
-  name      String
-  imageId  String
-  createdAt DateTime @default(now())
+  name       String
+  imageId    String
+  createdAt  DateTime   @default(now())
 }

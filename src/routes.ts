@@ -22,6 +22,7 @@ import complainRoutes from "./modules/complain/complain.route";
 import reviewRoutes from "./modules/review/review.route";
 import facebookReviewRoutes from "./modules/facebookReview/facebookReview.route";
 import carrybeeRoutes from "./carrybee/carrybee.route";
+import steadfastRoutes from "./steadfast/steadfast.route";
 import smsRoutes from "./modules/sms/sms.route";
 const router = Router();
 
@@ -70,6 +71,7 @@ router.use("/complains", complainRoutes);
 router.use("/review", reviewRoutes);
 router.use("/facebook-reviews", facebookReviewRoutes);
 router.use("/carrybee", carrybeeRoutes);
+router.use("/steadfast", steadfastRoutes);
 router.use("/sms", smsRoutes);
 
 // Health check route
