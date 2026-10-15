@@ -161,28 +161,28 @@ export const createOrderService = async (
     return order;
   });
 
-  void sendTelegramMessage(
-    buildOrderNotificationMessage({
-      orderNumber: order.orderNumber,
-      customerName: shippingAddress.name,
-      customerPhone: shippingAddress.phone,
-      district: shippingAddress.district,
-      address: shippingAddress.address,
-      items: data.items.map((item) => {
-        const product = products.find((p) => p.id === item.productId)!;
-        return {
-          name: product.name,
-          quantity: item.quantity,
-          price: product.price,
-          discountPrice: product.discountPrice,
-        };
-      }),
-      deliveryCharge: data.deliveryCharge,
-      totalAmount,
-      paymentMethod: data.payment.method,
-      comment: data.comment,
-    }),
-  );
+  // void sendTelegramMessage(
+  //   buildOrderNotificationMessage({
+  //     orderNumber: order.orderNumber,
+  //     customerName: shippingAddress.name,
+  //     customerPhone: shippingAddress.phone,
+  //     district: shippingAddress.district,
+  //     address: shippingAddress.address,
+  //     items: data.items.map((item) => {
+  //       const product = products.find((p) => p.id === item.productId)!;
+  //       return {
+  //         name: product.name,
+  //         quantity: item.quantity,
+  //         price: product.price,
+  //         discountPrice: product.discountPrice,
+  //       };
+  //     }),
+  //     deliveryCharge: data.deliveryCharge,
+  //     totalAmount,
+  //     paymentMethod: data.payment.method,
+  //     comment: data.comment,
+  //   }),
+  // );
 
   // try {
   //   const user = await prisma.user.findUnique({ where: { id: userId } });
